@@ -3,7 +3,6 @@ import React from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -34,7 +33,7 @@ const formSchema = z.object({
   type: z.enum(["expense", "income"]),
   description: z.string().min(1, "Description is required"),
   category: z.string().min(1, "Category is required"),
-  amount: z.string().min(1, "Amount is required").transform((val) => parseFloat(val)),
+  amount: z.coerce.number().positive("Amount must be positive"),
 });
 
 const categories = [
@@ -59,20 +58,19 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
       type: "expense",
       description: "",
       category: "",
-      amount: "",
+      amount: undefined,
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      // Fix: Parse the string to a number for the amount
       const { error } = await supabase
         .from('transactions')
         .insert({
           type: values.type,
           description: values.description,
           category: values.category,
-          amount: values.amount, // This is already converted to a number by zod transform
+          amount: values.amount, // now properly coerced to a number by zod
         });
 
       if (error) throw error;
@@ -165,6 +163,7 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
                   <FormControl>
                     <Input
                       type="number"
+                      step="0.01"
                       placeholder="Enter amount"
                       className="bg-gray-800 border-gray-700"
                       {...field}

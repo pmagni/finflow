@@ -10,6 +10,7 @@ import {
   Home,
   BadgeDollarSign
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const TransactionList = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
