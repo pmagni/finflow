@@ -62,10 +62,10 @@ const ChatInterface = () => {
       const data = await response.json();
       console.log('Response received:', data);
       
-      // Add assistant message with the actual response from the API
+      // Extract response from the output property instead of response property
       const assistantMessage: Message = {
         id: Date.now().toString(),
-        text: data.response || "I couldn't understand that request.",
+        text: data.output || "I couldn't understand that request.",
         sender: 'assistant',
         timestamp: new Date()
       };
