@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getRecentExpenses } from '@/services/expenseService';
 import {
@@ -14,9 +13,9 @@ import {
 
 const TransactionList = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // Fetch transactions and update state
     const fetchTransactions = async () => {
       try {
         const data = await getRecentExpenses(5);
@@ -24,13 +23,40 @@ const TransactionList = () => {
       } catch (error) {
         console.error('Error fetching transactions:', error);
         setTransactions([]);
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchTransactions();
+    
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('public:transactions')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'transactions' }, 
+        () => {
+          fetchTransactions();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   
-  // Map category to icon
+  if (isLoading) {
+    return (
+      <div className="bg-finflow-card rounded-2xl p-5 animate-fade-in">
+        <h2 className="text-lg font-bold mb-4">Recent Transactions</h2>
+        <div className="flex items-center justify-center p-4">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
       case 'food':

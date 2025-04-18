@@ -1,18 +1,41 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getExpensesByMonth } from '@/services/expenseService';
 
 const ExpenseChart = () => {
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
+  const [monthlyExpenses, setMonthlyExpenses] = useState<Record<string, Record<string, number>>>({});
+  const [isLoading, setIsLoading] = useState(true);
   
-  const monthlyExpenses = getExpensesByMonth();
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getExpensesByMonth();
+        setMonthlyExpenses(data);
+      } catch (error) {
+        console.error('Error fetching expenses:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
   
-  // Transform data for the chart
+  if (isLoading) {
+    return (
+      <div className="bg-finflow-card rounded-2xl p-5 mb-5 animate-fade-in">
+        <h2 className="text-lg font-bold mb-4">Monthly Expenses</h2>
+        <div className="h-64 flex items-center justify-center">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   const chartData = Object.entries(monthlyExpenses).map(([month, categories]) => {
     const total = Object.values(categories).reduce((sum, amount) => {
-      // Fix: Add type assertions to properly handle the unknown types
-      return sum as number + (amount as number);
+      return sum + (amount as number);
     }, 0);
     return {
       month,
@@ -21,7 +44,6 @@ const ExpenseChart = () => {
     };
   });
   
-  // Sort data by date (assuming format "MMM YYYY")
   chartData.sort((a, b) => {
     const [aMonth, aYear] = a.month.split(' ');
     const [bMonth, bYear] = b.month.split(' ');
@@ -32,7 +54,6 @@ const ExpenseChart = () => {
     return months.indexOf(aMonth) - months.indexOf(bMonth);
   });
   
-  // Get all categories from the data
   const allCategories = Array.from(
     new Set(
       chartData.flatMap(data => 
@@ -41,7 +62,6 @@ const ExpenseChart = () => {
     )
   );
   
-  // Generate colors for categories
   const colors: { [key: string]: string } = {
     food: '#FF6B6B',
     transport: '#4ECDC4',
@@ -52,10 +72,8 @@ const ExpenseChart = () => {
     subscriptions: '#9381FF'
   };
   
-  // Default color for any missing category
   const defaultColor = '#7EEBC6';
   
-  // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
