@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send, Bot, User } from 'lucide-react';
 import { Message } from '@/types';
+import { toast } from '@/components/ui/sonner';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -43,25 +44,28 @@ const ChatInterface = () => {
     setLoading(true);
     
     try {
+      console.log('Sending message to webhook:', inputMessage);
+      
       // Send message to webhook
       const response = await fetch('https://pmagni.app.n8n.cloud/webhook-test/106ac574-b117-498c-bb7b-2f930489aea7', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userMessage.text }),
+        body: JSON.stringify({ message: inputMessage }),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to get response from assistant');
+        throw new Error(`Failed to get response from assistant: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('Response received:', data);
       
-      // Add assistant message
+      // Add assistant message with the actual response from the API
       const assistantMessage: Message = {
         id: Date.now().toString(),
-        text: data.response || 'Sorry, I could not process your request.',
+        text: data.response || "I couldn't understand that request.",
         sender: 'assistant',
         timestamp: new Date()
       };
@@ -79,6 +83,7 @@ const ChatInterface = () => {
       };
       
       setMessages(prev => [...prev, errorMessage]);
+      toast.error("Failed to get a response from the assistant");
     } finally {
       setLoading(false);
     }
