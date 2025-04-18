@@ -1,10 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send, Bot, User } from 'lucide-react';
 import { Message } from '@/types';
 import { toast } from '@/components/ui/sonner';
+import { getRecentExpenses, getExpensesByCategory, getTotalExpenses, getFinancialHealthScore } from '@/services/expenseService';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -21,7 +21,6 @@ const ChatInterface = () => {
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
-  // Automatically scroll to bottom when messages change
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -31,7 +30,6 @@ const ChatInterface = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
     
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputMessage,
@@ -44,15 +42,35 @@ const ChatInterface = () => {
     setLoading(true);
     
     try {
-      console.log('Sending message to webhook:', inputMessage);
+      const recentTransactions = getRecentExpenses();
+      const expensesByCategory = getExpensesByCategory();
+      const totalExpenses = getTotalExpenses();
+      const financialHealth = getFinancialHealthScore();
+
+      console.log('Sending message to webhook with financial data:', {
+        message: inputMessage,
+        financialContext: {
+          recentTransactions,
+          expensesByCategory,
+          totalExpenses,
+          financialHealth
+        }
+      });
       
-      // Send message to webhook
       const response = await fetch('https://pmagni.app.n8n.cloud/webhook-test/106ac574-b117-498c-bb7b-2f930489aea7', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: inputMessage }),
+        body: JSON.stringify({
+          message: inputMessage,
+          financialContext: {
+            recentTransactions,
+            expensesByCategory,
+            totalExpenses,
+            financialHealth
+          }
+        }),
       });
       
       if (!response.ok) {
@@ -62,7 +80,6 @@ const ChatInterface = () => {
       const data = await response.json();
       console.log('Response received:', data);
       
-      // Extract response from the output property instead of response property
       const assistantMessage: Message = {
         id: Date.now().toString(),
         text: data.output || "I couldn't understand that request.",
@@ -74,7 +91,6 @@ const ChatInterface = () => {
     } catch (error) {
       console.error('Error sending message:', error);
       
-      // Add error message
       const errorMessage: Message = {
         id: Date.now().toString(),
         text: 'Sorry, there was an error processing your request. Please try again.',
