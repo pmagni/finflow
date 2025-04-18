@@ -1,43 +1,16 @@
-
+import { supabase } from '@/integrations/supabase/client';
 import { Expense, FinancialHealthScore } from "../types";
 
-// Mock data provided
-export const expenses: Expense[] = [
-  // --- 2024 MOCK DATA ---
-  { date: '2024-10-10', category: 'food', amount: 12, timeStamp: '12:15PM', currency: '$' },
-  { date: '2024-10-12', category: 'transport', amount: 22, timeStamp: '07:45AM', currency: '$' },
-  { date: '2024-10-28', category: 'groceries', amount: 85, timeStamp: '05:30PM', currency: '$' },
-  { date: '2024-11-05', category: 'entertainment', amount: 40, timeStamp: '08:00PM', currency: '$' },
-  { date: '2024-11-11', category: 'food', amount: 18, timeStamp: '01:30PM', currency: '$' },
-  { date: '2024-11-23', category: 'subscriptions', amount: 12, timeStamp: '10:00AM', currency: '$' },
-  { date: '2024-12-01', category: 'utilities', amount: 90, timeStamp: '03:20PM', currency: '$' },
-  { date: '2024-12-17', category: 'groceries', amount: 130, timeStamp: '06:45PM', currency: '$' },
-  { date: '2024-12-21', category: 'transport', amount: 55, timeStamp: '09:00AM', currency: '$' },
-  { date: '2024-12-29', category: 'gifts', amount: 75, timeStamp: '04:50PM', currency: '$' },
+export async function getExpensesByMonth() {
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-  // --- 2025 MOCK DATA ---
-  { date: '2025-01-05', category: 'food', amount: 15, timeStamp: '11:00AM', currency: '$' },
-  { date: '2025-01-12', category: 'transport', amount: 40, timeStamp: '08:30AM', currency: '$' },
-  { date: '2025-01-20', category: 'entertainment', amount: 30, timeStamp: '09:15PM', currency: '$' },
-  { date: '2025-01-25', category: 'subscriptions', amount: 10, timeStamp: '08:00AM', currency: '$' },
-  { date: '2025-02-03', category: 'groceries', amount: 120, timeStamp: '04:00PM', currency: '$' },
-  { date: '2025-02-07', category: 'gifts', amount: 60, timeStamp: '05:15PM', currency: '$' },
-  { date: '2025-02-11', category: 'food', amount: 18, timeStamp: '01:00PM', currency: '$' },
-  { date: '2025-02-25', category: 'transport', amount: 60, timeStamp: '07:45AM', currency: '$' },
-  { date: '2025-03-01', category: 'utilities', amount: 95, timeStamp: '02:30PM', currency: '$' },
-  { date: '2025-03-05', category: 'transport', amount: 35, timeStamp: '10:30AM', currency: '$' },
-  { date: '2025-03-12', category: 'food', amount: 15, timeStamp: '11:00AM', currency: '$' },
-  { date: '2025-03-15', category: 'food', amount: 22, timeStamp: '12:45PM', currency: '$' },
-  { date: '2025-03-19', category: 'entertainment', amount: 50, timeStamp: '09:00PM', currency: '$' },
-  { date: '2025-03-22', category: 'entertainment', amount: 45, timeStamp: '08:50PM', currency: '$' },
-  { date: '2025-03-28', category: 'groceries', amount: 110, timeStamp: '06:15PM', currency: '$' },
-];
-
-export function getExpensesByMonth() {
   const monthlyExpenses: Record<string, Record<string, number>> = {};
   
-  expenses.forEach(expense => {
-    const date = new Date(expense.date);
+  transactions?.forEach(transaction => {
+    const date = new Date(transaction.created_at);
     const month = date.toLocaleString('default', { month: 'short' });
     const year = date.getFullYear();
     const key = `${month} ${year}`;
@@ -46,11 +19,13 @@ export function getExpensesByMonth() {
       monthlyExpenses[key] = {};
     }
     
-    if (!monthlyExpenses[key][expense.category]) {
-      monthlyExpenses[key][expense.category] = 0;
+    if (!monthlyExpenses[key][transaction.category]) {
+      monthlyExpenses[key][transaction.category] = 0;
     }
     
-    monthlyExpenses[key][expense.category] += expense.amount;
+    if (transaction.type === 'expense') {
+      monthlyExpenses[key][transaction.category] += transaction.amount;
+    }
   });
   
   return monthlyExpenses;
@@ -61,14 +36,27 @@ export function getFormattedDate(dateString: string) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function getTotalExpenses() {
-  return expenses.reduce((total, expense) => total + expense.amount, 0);
+export async function getTotalExpenses() {
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('*');
+
+  return transactions?.reduce((total, transaction) => {
+    if (transaction.type === 'expense') {
+      return total + transaction.amount;
+    }
+    return total;
+  }, 0) || 0;
 }
 
-export function getRecentExpenses(limit = 10) {
-  return [...expenses]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, limit);
+export async function getRecentExpenses(limit = 10) {
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  return transactions || [];
 }
 
 export function getFinancialHealthScore(): FinancialHealthScore {
@@ -89,20 +77,34 @@ export function getFinancialHealthScore(): FinancialHealthScore {
   };
 }
 
-export function getCategoryTotal(category: string) {
-  return expenses
-    .filter(expense => expense.category === category)
-    .reduce((total, expense) => total + expense.amount, 0);
+export async function getCategoryTotal(category: string) {
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('category', category);
+
+  return transactions?.reduce((total, transaction) => {
+    if (transaction.type === 'expense') {
+      return total + transaction.amount;
+    }
+    return total;
+  }, 0) || 0;
 }
 
-export function getExpensesByCategory() {
+export async function getExpensesByCategory() {
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('*');
+
   const categories: Record<string, number> = {};
   
-  expenses.forEach(expense => {
-    if (!categories[expense.category]) {
-      categories[expense.category] = 0;
+  transactions?.forEach(transaction => {
+    if (transaction.type === 'expense') {
+      if (!categories[transaction.category]) {
+        categories[transaction.category] = 0;
+      }
+      categories[transaction.category] += transaction.amount;
     }
-    categories[expense.category] += expense.amount;
   });
   
   return categories;
