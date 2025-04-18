@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Expense, FinancialHealthScore } from "../types";
 
@@ -10,7 +11,7 @@ export async function getExpensesByMonth() {
   const monthlyExpenses: Record<string, Record<string, number>> = {};
   
   transactions?.forEach(transaction => {
-    const date = new Date(transaction.created_at);
+    const date = new Date(transaction.created_at || '');
     const month = date.toLocaleString('default', { month: 'short' });
     const year = date.getFullYear();
     const key = `${month} ${year}`;
@@ -24,7 +25,7 @@ export async function getExpensesByMonth() {
     }
     
     if (transaction.type === 'expense') {
-      monthlyExpenses[key][transaction.category] += transaction.amount;
+      monthlyExpenses[key][transaction.category] += Number(transaction.amount);
     }
   });
   
@@ -43,7 +44,7 @@ export async function getTotalExpenses() {
 
   return transactions?.reduce((total, transaction) => {
     if (transaction.type === 'expense') {
-      return total + transaction.amount;
+      return total + Number(transaction.amount);
     }
     return total;
   }, 0) || 0;
@@ -85,7 +86,7 @@ export async function getCategoryTotal(category: string) {
 
   return transactions?.reduce((total, transaction) => {
     if (transaction.type === 'expense') {
-      return total + transaction.amount;
+      return total + Number(transaction.amount);
     }
     return total;
   }, 0) || 0;
@@ -103,7 +104,7 @@ export async function getExpensesByCategory() {
       if (!categories[transaction.category]) {
         categories[transaction.category] = 0;
       }
-      categories[transaction.category] += transaction.amount;
+      categories[transaction.category] += Number(transaction.amount);
     }
   });
   

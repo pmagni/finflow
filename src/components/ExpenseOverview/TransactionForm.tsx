@@ -65,13 +65,14 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      // Fix: Parse the string to a number for the amount
       const { error } = await supabase
         .from('transactions')
         .insert({
           type: values.type,
           description: values.description,
           category: values.category,
-          amount: values.amount,
+          amount: values.amount, // This is already converted to a number by zod transform
         });
 
       if (error) throw error;

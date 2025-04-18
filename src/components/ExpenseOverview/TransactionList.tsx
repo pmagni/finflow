@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getRecentExpenses } from '@/services/expenseService';
 import {
   ShoppingBag,
@@ -13,7 +13,22 @@ import {
 } from 'lucide-react';
 
 const TransactionList = () => {
-  const recentTransactions = getRecentExpenses(5);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  
+  useEffect(() => {
+    // Fetch transactions and update state
+    const fetchTransactions = async () => {
+      try {
+        const data = await getRecentExpenses(5);
+        setTransactions(data);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        setTransactions([]);
+      }
+    };
+    
+    fetchTransactions();
+  }, []);
   
   // Map category to icon
   const getCategoryIcon = (category: string) => {
@@ -47,7 +62,7 @@ const TransactionList = () => {
       <h2 className="text-lg font-bold mb-4">Recent Transactions</h2>
       
       <div className="space-y-3">
-        {recentTransactions.map((transaction, index) => (
+        {transactions.map((transaction, index) => (
           <div 
             key={index}
             className="bg-gray-900 rounded-xl p-3 flex items-center justify-between card-hover"
@@ -58,13 +73,13 @@ const TransactionList = () => {
               </div>
               <div className="text-left">
                 <p className="font-medium capitalize">{transaction.category}</p>
-                <p className="text-xs text-gray-400">{formatDate(transaction.date)}</p>
+                <p className="text-xs text-gray-400">{formatDate(transaction.created_at)}</p>
               </div>
             </div>
             
             <div className="text-right">
-              <p className="font-medium">{transaction.currency}{transaction.amount}</p>
-              <p className="text-xs text-gray-400">{transaction.timeStamp}</p>
+              <p className="font-medium">{transaction.currency || '$'}{transaction.amount}</p>
+              <p className="text-xs text-gray-400">{transaction.description}</p>
             </div>
           </div>
         ))}

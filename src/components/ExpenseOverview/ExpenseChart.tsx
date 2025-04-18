@@ -10,7 +10,10 @@ const ExpenseChart = () => {
   
   // Transform data for the chart
   const chartData = Object.entries(monthlyExpenses).map(([month, categories]) => {
-    const total = Object.values(categories).reduce((sum, amount) => sum + amount, 0);
+    const total = Object.values(categories).reduce((sum, amount) => {
+      // Fix: Add type assertions to properly handle the unknown types
+      return sum as number + (amount as number);
+    }, 0);
     return {
       month,
       ...categories,
