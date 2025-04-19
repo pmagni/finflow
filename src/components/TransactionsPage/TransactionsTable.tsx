@@ -171,9 +171,7 @@ export function TransactionsTable() {
     if (dateFilter) {
       const selectedDate = format(dateFilter, 'yyyy-MM-dd');
       result = result.filter((t) => {
-        // Use transaction_date if available, otherwise fall back to created_at
-        const dateToUse = t.transaction_date || t.created_at;
-        const transactionDate = new Date(dateToUse);
+        const transactionDate = new Date(t.created_at || '');
         return format(transactionDate, 'yyyy-MM-dd') === selectedDate;
       });
     }
@@ -319,9 +317,7 @@ export function TransactionsTable() {
               {filteredTransactions.map((transaction) => (
                 <TableRow key={transaction.id} className="border-t border-gray-700 hover:bg-gray-800">
                   <TableCell className="font-medium">
-                    {transaction.transaction_date 
-                      ? format(new Date(transaction.transaction_date), 'PP') 
-                      : format(new Date(transaction.created_at), 'PP')}
+                    {format(new Date(transaction.created_at), 'PP')}
                   </TableCell>
                   <TableCell>{transaction.description}</TableCell>
                   <TableCell>

@@ -83,6 +83,9 @@ export function TransactionForm({
     }
 
     try {
+      // Extraer la fecha seleccionada para uso con created_at
+      const selectedDate = values.transaction_date.toISOString();
+      
       if (isEditing && transaction) {
         // Update existing transaction
         const { error } = await supabase
@@ -92,7 +95,7 @@ export function TransactionForm({
             description: values.description,
             category_id: values.category,
             amount: values.amount,
-            transaction_date: values.transaction_date.toISOString(),
+            created_at: selectedDate, // Usar created_at en lugar de transaction_date
           })
           .eq('id', transaction.id);
 
@@ -108,7 +111,7 @@ export function TransactionForm({
             category_id: values.category,
             amount: values.amount,
             user_id: user.id,
-            transaction_date: values.transaction_date.toISOString(),
+            created_at: selectedDate, // Usar created_at en lugar de transaction_date
           });
 
         if (error) throw error;
