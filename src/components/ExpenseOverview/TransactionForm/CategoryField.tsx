@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useFormContext } from 'react-hook-form';
 import {
   FormField,
   FormItem,
@@ -18,10 +19,15 @@ import { Button } from "@/components/ui/button";
 import { Plus } from 'lucide-react';
 import { CategoryManagementDialog } from '@/components/CategoryManagement/CategoryManagementDialog';
 import { getCategories } from '@/services/categoryService';
+import { Category } from './TransactionFormSchema';
 
 export function CategoryField() {
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { watch } = useFormContext();
+  
+  // Watch for changes to the transaction type
+  const transactionType = watch("type");
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -39,6 +45,11 @@ export function CategoryField() {
     fetchCategories();
   }, []);
 
+  // Filter categories based on the selected transaction type
+  const filteredCategories = categories.filter(
+    (category) => category.transaction_type === transactionType
+  );
+
   return (
     <FormField
       name="category"
@@ -55,9 +66,13 @@ export function CategoryField() {
               <SelectContent className="bg-gray-800 border-gray-700">
                 {isLoading ? (
                   <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+                ) : filteredCategories.length === 0 ? (
+                  <SelectItem value="no-categories" disabled>
+                    No {transactionType} categories found
+                  </SelectItem>
                 ) : (
-                  categories.map((category) => (
-                    <SelectItem key={category.id} value={category.name}>
+                  filteredCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
                       {category.name.charAt(0).toUpperCase() + category.name.slice(1)}
                     </SelectItem>
                   ))
