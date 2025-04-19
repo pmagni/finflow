@@ -5,8 +5,8 @@ import { toast } from 'sonner';
 interface Category {
   id: string;
   name: string;
-  color: string;
   icon: string;
+  transaction_type: 'income' | 'expense';
 }
 
 export async function getCategories() {
@@ -23,7 +23,7 @@ export async function getCategories() {
   return data;
 }
 
-export async function createCategory({ name, color, icon }: Omit<Category, 'id'>) {
+export async function createCategory({ name, icon, transaction_type }: Omit<Category, 'id'>) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -35,7 +35,7 @@ export async function createCategory({ name, color, icon }: Omit<Category, 'id'>
 
   const { data, error } = await supabase
     .from('categories')
-    .insert({ name, color, icon, user_id: user.id })
+    .insert({ name, icon, transaction_type, user_id: user.id })
     .select()
     .single();
 
@@ -48,10 +48,10 @@ export async function createCategory({ name, color, icon }: Omit<Category, 'id'>
   return data;
 }
 
-export async function updateCategory({ id, name, color, icon }: Category) {
+export async function updateCategory({ id, name, icon, transaction_type }: Category) {
   const { error } = await supabase
     .from('categories')
-    .update({ name, color, icon })
+    .update({ name, icon, transaction_type })
     .eq('id', id);
 
   if (error) {

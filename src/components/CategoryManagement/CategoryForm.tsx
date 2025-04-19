@@ -14,12 +14,18 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Category name is required'),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Must be a valid hex color'),
   icon: z.string().min(1, 'Icon is required'),
+  transaction_type: z.enum(['income', 'expense']),
 });
 
 const icons = [
@@ -37,8 +43,8 @@ interface CategoryFormProps {
   initialData?: {
     id?: string;
     name: string;
-    color: string;
     icon: string;
+    transaction_type: 'income' | 'expense';
   };
   onSubmit: (values: z.infer<typeof formSchema>) => Promise<void>;
   onCancel: () => void;
@@ -51,8 +57,8 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData?.name || '',
-      color: initialData?.color || '#9b87f5',
       icon: initialData?.icon || 'shopping-bag',
+      transaction_type: initialData?.transaction_type || 'expense',
     },
   });
 
@@ -61,13 +67,21 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="name"
+          name="transaction_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Category Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter category name" {...field} />
-              </FormControl>
+              <FormLabel>Type</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="bg-gray-800 border-gray-700">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem value="income">Income</SelectItem>
+                  <SelectItem value="expense">Expense</SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -75,12 +89,12 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
 
         <FormField
           control={form.control}
-          name="color"
+          name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Color</FormLabel>
+              <FormLabel>Category Name</FormLabel>
               <FormControl>
-                <Input type="color" {...field} />
+                <Input placeholder="Enter category name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

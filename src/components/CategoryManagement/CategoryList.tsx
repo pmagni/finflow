@@ -4,6 +4,7 @@ import { getCategories, deleteCategory } from '@/services/categoryService';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
 import { getCategoryIcon } from '@/utils/categoryIcons';
+import { Badge } from '@/components/ui/badge';
 
 interface CategoryListProps {
   onEdit: (category: any) => void;
@@ -42,13 +43,15 @@ export function CategoryList({ onEdit }: CategoryListProps) {
             className="flex items-center justify-between p-2 rounded-lg bg-gray-800"
           >
             <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: category.color }}
-              >
-                <Icon className="h-4 w-4 text-white" />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-700">
+                <Icon className="h-4 w-4" />
               </div>
-              <span>{category.name}</span>
+              <div className="flex flex-col">
+                <span>{category.name}</span>
+                <Badge variant={category.transaction_type === 'income' ? 'default' : 'secondary'}>
+                  {category.transaction_type}
+                </Badge>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button

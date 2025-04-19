@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
-import { createCategory } from '@/services/categoryService';
+import { createCategory, updateCategory } from '@/services/categoryService';
 
 interface CategoryManagementDialogProps {
   trigger?: React.ReactNode;
@@ -20,14 +20,30 @@ interface CategoryManagementDialogProps {
 export function CategoryManagementDialog({ trigger }: CategoryManagementDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
 
-  const handleCreateCategory = async (values: any) => {
+  const handleSubmit = async (values: any) => {
     try {
-      await createCategory(values);
+      if (editingCategory) {
+        await updateCategory({ ...values, id: editingCategory.id });
+      } else {
+        await createCategory(values);
+      }
       setShowForm(false);
+      setEditingCategory(null);
     } catch (error) {
-      console.error('Error creating category:', error);
+      console.error('Error managing category:', error);
     }
+  };
+
+  const handleEdit = (category: any) => {
+    setEditingCategory(category);
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingCategory(null);
   };
 
   return (
@@ -46,8 +62,9 @@ export function CategoryManagementDialog({ trigger }: CategoryManagementDialogPr
         </DialogHeader>
         {showForm ? (
           <CategoryForm
-            onSubmit={handleCreateCategory}
-            onCancel={() => setShowForm(false)}
+            initialData={editingCategory}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
           />
         ) : (
           <div className="space-y-4">
@@ -59,7 +76,7 @@ export function CategoryManagementDialog({ trigger }: CategoryManagementDialogPr
               <Plus className="h-4 w-4 mr-2" />
               Add New Category
             </Button>
-            <CategoryList onEdit={() => setShowForm(true)} />
+            <CategoryList onEdit={handleEdit} />
           </div>
         )}
       </DialogContent>
