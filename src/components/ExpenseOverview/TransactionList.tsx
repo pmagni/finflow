@@ -12,15 +12,41 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface Transaction {
+  id: string;
+  type: 'income' | 'expense';
+  description: string;
+  amount: number;
+  category_id: string | null;
+  user_id: string | null;
+  created_at: string | null;
+  transaction_date?: string | null;
+  currency?: string | null;
+  category?: {
+    name: string;
+    icon: string;
+  } | null;
+}
+
 const TransactionList = () => {
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const data = await getRecentExpenses(5);
-        setTransactions(data);
+        // Updated query to include category relationship
+        const { data, error } = await supabase
+          .from('transactions')
+          .select(`
+            *,
+            category:categories(name, icon)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(5);
+          
+        if (error) throw error;
+        setTransactions(data || []);
       } catch (error) {
         console.error('Error fetching transactions:', error);
         setTransactions([]);
@@ -58,8 +84,13 @@ const TransactionList = () => {
     );
   }
   
-  const getCategoryIcon = (category: string) => {
-    switch (category.toLowerCase()) {
+  const getCategoryIcon = (categoryName: string | null | undefined) => {
+    // Si category es null o undefined, usar un valor por defecto
+    if (!categoryName) {
+      return <BadgeDollarSign className="text-finflow-mint" size={20} />;
+    }
+    
+    switch (categoryName.toLowerCase()) {
       case 'food':
         return <Coffee className="text-[#FF6B6B]" size={20} />;
       case 'transport':
@@ -79,9 +110,18 @@ const TransactionList = () => {
     }
   };
   
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) {
+      return 'No date';
+    }
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
   };
   
   return (
@@ -89,27 +129,35 @@ const TransactionList = () => {
       <h2 className="text-lg font-bold mb-4">Recent Transactions</h2>
       
       <div className="space-y-3">
-        {transactions.map((transaction, index) => (
-          <div 
-            key={index}
-            className="bg-gray-900 rounded-xl p-3 flex items-center justify-between card-hover"
-          >
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-3">
-                {getCategoryIcon(transaction.category)}
-              </div>
-              <div className="text-left">
-                <p className="font-medium capitalize">{transaction.category}</p>
-                <p className="text-xs text-gray-400">{formatDate(transaction.created_at)}</p>
-              </div>
-            </div>
-            
-            <div className="text-right">
-              <p className="font-medium">{transaction.currency || '$'}{transaction.amount}</p>
-              <p className="text-xs text-gray-400">{transaction.description}</p>
-            </div>
+        {transactions.length === 0 ? (
+          <div className="text-center py-4 text-gray-400">
+            <p>No recent transactions</p>
           </div>
-        ))}
+        ) : (
+          transactions.map((transaction) => (
+            <div 
+              key={transaction.id}
+              className="bg-gray-900 rounded-xl p-3 flex items-center justify-between card-hover"
+            >
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-3">
+                  {getCategoryIcon(transaction.category?.name)}
+                </div>
+                <div className="text-left">
+                  <p className="font-medium capitalize">{transaction.category?.name || 'Uncategorized'}</p>
+                  <p className="text-xs text-gray-400">
+                    {formatDate(transaction.transaction_date || transaction.created_at)}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <p className="font-medium">{transaction.currency || '$'}{transaction.amount || 0}</p>
+                <p className="text-xs text-gray-400">{transaction.description || 'No description'}</p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
       
       <button className="w-full mt-4 text-finflow-mint text-sm hover:underline">

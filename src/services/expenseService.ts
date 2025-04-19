@@ -1,63 +1,100 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Expense, FinancialHealthScore } from "../types";
 
 export async function getExpensesByMonth() {
-  const { data: transactions } = await supabase
-    .from('transactions')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        category:categories(name, icon)
+      `)
+      .order('created_at', { ascending: false });
 
-  const monthlyExpenses: Record<string, Record<string, number>> = {};
-  
-  transactions?.forEach(transaction => {
-    const date = new Date(transaction.created_at || '');
-    const month = date.toLocaleString('default', { month: 'short' });
-    const year = date.getFullYear();
-    const key = `${month} ${year}`;
+    if (error) throw error;
+      
+    const monthlyExpenses: Record<string, Record<string, number>> = {};
     
-    if (!monthlyExpenses[key]) {
-      monthlyExpenses[key] = {};
-    }
+    transactions?.forEach(transaction => {
+      const date = new Date(transaction.created_at || '');
+      const month = date.toLocaleString('default', { month: 'short' });
+      const year = date.getFullYear();
+      const key = `${month} ${year}`;
+      
+      if (!monthlyExpenses[key]) {
+        monthlyExpenses[key] = {};
+      }
+      
+      // Use category name from relationship if available
+      const categoryName = transaction.category?.name || 'Uncategorized';
+      
+      if (!monthlyExpenses[key][categoryName]) {
+        monthlyExpenses[key][categoryName] = 0;
+      }
+      
+      if (transaction.type === 'expense') {
+        monthlyExpenses[key][categoryName] += Number(transaction.amount || 0);
+      }
+    });
     
-    if (!monthlyExpenses[key][transaction.category]) {
-      monthlyExpenses[key][transaction.category] = 0;
-    }
-    
-    if (transaction.type === 'expense') {
-      monthlyExpenses[key][transaction.category] += Number(transaction.amount);
-    }
-  });
-  
-  return monthlyExpenses;
+    return monthlyExpenses;
+  } catch (error) {
+    console.error('Error fetching expenses by month:', error);
+    return {};
+  }
 }
 
-export function getFormattedDate(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+export function getFormattedDate(dateString: string | null | undefined) {
+  if (!dateString) {
+    return 'No date';
+  }
+  
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
 }
 
 export async function getTotalExpenses() {
-  const { data: transactions } = await supabase
-    .from('transactions')
-    .select('*');
+  try {
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select('*');
 
-  return transactions?.reduce((total, transaction) => {
-    if (transaction.type === 'expense') {
-      return total + Number(transaction.amount);
-    }
-    return total;
-  }, 0) || 0;
+    if (error) throw error;
+  
+    return transactions?.reduce((total, transaction) => {
+      if (transaction.type === 'expense') {
+        return total + Number(transaction.amount || 0);
+      }
+      return total;
+    }, 0) || 0;
+  } catch (error) {
+    console.error('Error calculating total expenses:', error);
+    return 0;
+  }
 }
 
 export async function getRecentExpenses(limit = 10) {
-  const { data: transactions } = await supabase
-    .from('transactions')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  try {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        category:categories(name, icon)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-  return transactions || [];
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching recent expenses:', error);
+    return [];
+  }
 }
 
 export function getFinancialHealthScore(): FinancialHealthScore {
@@ -79,34 +116,54 @@ export function getFinancialHealthScore(): FinancialHealthScore {
 }
 
 export async function getCategoryTotal(category: string) {
-  const { data: transactions } = await supabase
-    .from('transactions')
-    .select('*')
-    .eq('category', category);
+  try {
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('category_id', category);
 
-  return transactions?.reduce((total, transaction) => {
-    if (transaction.type === 'expense') {
-      return total + Number(transaction.amount);
-    }
-    return total;
-  }, 0) || 0;
+    if (error) throw error;
+  
+    return transactions?.reduce((total, transaction) => {
+      if (transaction.type === 'expense') {
+        return total + Number(transaction.amount || 0);
+      }
+      return total;
+    }, 0) || 0;
+  } catch (error) {
+    console.error('Error calculating category total:', error);
+    return 0;
+  }
 }
 
 export async function getExpensesByCategory() {
-  const { data: transactions } = await supabase
-    .from('transactions')
-    .select('*');
+  try {
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        category:categories(name, icon)
+      `);
 
-  const categories: Record<string, number> = {};
+    if (error) throw error;
   
-  transactions?.forEach(transaction => {
-    if (transaction.type === 'expense') {
-      if (!categories[transaction.category]) {
-        categories[transaction.category] = 0;
+    const categories: Record<string, number> = {};
+    
+    transactions?.forEach(transaction => {
+      if (transaction.type === 'expense') {
+        // Use category name from relationship if available
+        const categoryName = transaction.category?.name || 'Uncategorized';
+        
+        if (!categories[categoryName]) {
+          categories[categoryName] = 0;
+        }
+        categories[categoryName] += Number(transaction.amount || 0);
       }
-      categories[transaction.category] += Number(transaction.amount);
-    }
-  });
-  
-  return categories;
+    });
+    
+    return categories;
+  } catch (error) {
+    console.error('Error fetching expenses by category:', error);
+    return {};
+  }
 }

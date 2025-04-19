@@ -1,3 +1,9 @@
+/**
+ * @deprecated This component is deprecated. 
+ * Please use AssistantChat.tsx instead for all new development.
+ * This file is kept for historical reference only.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -6,7 +12,7 @@ import { Message } from '@/types';
 import { toast } from '@/components/ui/sonner';
 import { getRecentExpenses, getExpensesByCategory, getTotalExpenses, getFinancialHealthScore } from '@/services/expenseService';
 
-const ChatInterface = () => {
+const ChatInterfaceDeprecated = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -42,9 +48,10 @@ const ChatInterface = () => {
     setLoading(true);
     
     try {
-      const recentTransactions = getRecentExpenses();
-      const expensesByCategory = getExpensesByCategory();
-      const totalExpenses = getTotalExpenses();
+      // These should be awaited in production code
+      const recentTransactions = await getRecentExpenses();
+      const expensesByCategory = await getExpensesByCategory();
+      const totalExpenses = await getTotalExpenses();
       const financialHealth = getFinancialHealthScore();
 
       console.log('Sending message to webhook with financial data:', {
@@ -189,4 +196,4 @@ const ChatInterface = () => {
   );
 };
 
-export default ChatInterface;
+export default ChatInterfaceDeprecated;

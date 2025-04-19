@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +8,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import DebtPage from "./pages/DebtPage";
 import AssistantPage from "./pages/AssistantPage";
+import TransactionsPage from "./pages/TransactionsPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 
@@ -44,6 +44,14 @@ const App = () => (
               element={
                 <RequireAuth>
                   <AssistantPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/transactions"
+              element={
+                <RequireAuth>
+                  <TransactionsPage />
                 </RequireAuth>
               }
             />

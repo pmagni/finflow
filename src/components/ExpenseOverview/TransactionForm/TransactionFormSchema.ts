@@ -1,4 +1,3 @@
-
 import * as z from "zod";
 
 export interface Category {
@@ -16,6 +15,9 @@ export const transactionFormSchema = z.object({
   description: z.string().min(1, "Description is required"),
   category: z.string().min(1, "Category is required"),
   amount: z.coerce.number().positive("Amount must be positive"),
+  transaction_date: z.date({
+    required_error: "Date is required",
+  }),
 });
 
 export type TransactionFormValues = z.infer<typeof transactionFormSchema>;

@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider } from "react-hook-form";
 import {
@@ -18,14 +17,29 @@ import { TypeField } from './TypeField';
 import { DescriptionField } from './DescriptionField';
 import { CategoryField } from './CategoryField';
 import { AmountField } from './AmountField';
+import { DateField } from './DateField';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface TransactionFormProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  transaction?: {
+    id: string;
+    type: "expense" | "income";
+    description: string;
+    category_id: string;
+    amount: number;
+    transaction_date?: string;
+  };
+  isEditing?: boolean;
 }
 
-export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) {
+export function TransactionForm({ 
+  isOpen, 
+  onOpenChange, 
+  transaction, 
+  isEditing = false 
+}: TransactionFormProps) {
   const { user } = useAuth();
   
   const form = useForm<TransactionFormValues>({
@@ -35,8 +49,32 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
       description: "",
       category: "",
       amount: undefined,
+      transaction_date: new Date(),
     },
   });
+
+  // Update form values when editing an existing transaction
+  useEffect(() => {
+    if (isEditing && transaction) {
+      form.reset({
+        type: transaction.type,
+        description: transaction.description,
+        category: transaction.category_id,
+        amount: transaction.amount,
+        transaction_date: transaction.transaction_date 
+          ? new Date(transaction.transaction_date) 
+          : new Date(),
+      });
+    } else if (!isEditing) {
+      form.reset({
+        type: "expense",
+        description: "",
+        category: "",
+        amount: undefined,
+        transaction_date: new Date(),
+      });
+    }
+  }, [form, isEditing, transaction, isOpen]);
 
   const onSubmit = async (values: TransactionFormValues) => {
     if (!user) {
@@ -45,24 +83,43 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
     }
 
     try {
-      const { error } = await supabase
-        .from('transactions')
-        .insert({
-          type: values.type,
-          description: values.description,
-          category_id: values.category, // Use category_id instead of category
-          amount: values.amount,
-          user_id: user.id, // Add user_id to satisfy RLS policy
-        });
+      if (isEditing && transaction) {
+        // Update existing transaction
+        const { error } = await supabase
+          .from('transactions')
+          .update({
+            type: values.type,
+            description: values.description,
+            category_id: values.category,
+            amount: values.amount,
+            transaction_date: values.transaction_date.toISOString(),
+          })
+          .eq('id', transaction.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Transaction updated successfully");
+      } else {
+        // Insert new transaction
+        const { error } = await supabase
+          .from('transactions')
+          .insert({
+            type: values.type,
+            description: values.description,
+            category_id: values.category,
+            amount: values.amount,
+            user_id: user.id,
+            transaction_date: values.transaction_date.toISOString(),
+          });
 
-      toast.success("Transaction added successfully");
+        if (error) throw error;
+        toast.success("Transaction added successfully");
+      }
+      
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error adding transaction:', error);
-      toast.error("Failed to add transaction");
+      console.error('Error with transaction:', error);
+      toast.error(`Failed to ${isEditing ? 'update' : 'add'} transaction`);
     }
   };
 
@@ -73,9 +130,9 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
         aria-describedby="transaction-form-description"
       >
         <DialogHeader>
-          <DialogTitle>Add Transaction</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit' : 'Add'} Transaction</DialogTitle>
           <DialogDescription id="transaction-form-description">
-            Fill out the form below to add a new transaction.
+            {isEditing ? 'Edit the' : 'Fill out the form below to add a new'} transaction.
           </DialogDescription>
         </DialogHeader>
         <FormProvider {...form}>
@@ -85,6 +142,7 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
               <DescriptionField />
               <CategoryField />
               <AmountField />
+              <DateField />
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"
@@ -98,7 +156,7 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
                   type="submit"
                   className="bg-finflow-mint hover:bg-finflow-mint-dark text-black"
                 >
-                  Add Transaction
+                  {isEditing ? 'Update' : 'Add'} Transaction
                 </Button>
               </div>
             </form>
