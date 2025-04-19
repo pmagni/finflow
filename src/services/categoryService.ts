@@ -24,9 +24,18 @@ export async function getCategories() {
 }
 
 export async function createCategory({ name, color, icon }: Omit<Category, 'id'>) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    toast.error('You need to be logged in to create a category');
+    throw new Error('User not authenticated');
+  }
+
   const { data, error } = await supabase
     .from('categories')
-    .insert({ name, color, icon })
+    .insert({ name, color, icon, user_id: user.id })
     .select()
     .single();
 
