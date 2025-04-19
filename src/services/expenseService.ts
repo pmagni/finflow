@@ -9,14 +9,15 @@ export async function getExpensesByMonth() {
         *,
         category:categories(name, icon)
       `)
-      .order('created_at', { ascending: false });
+      .order('transaction_date', { ascending: false });
 
     if (error) throw error;
       
     const monthlyExpenses: Record<string, Record<string, number>> = {};
     
     transactions?.forEach(transaction => {
-      const date = new Date(transaction.created_at || '');
+      const dateToUse = transaction.transaction_date || transaction.created_at;
+      const date = new Date(dateToUse || '');
       const month = date.toLocaleString('default', { month: 'short' });
       const year = date.getFullYear();
       const key = `${month} ${year}`;

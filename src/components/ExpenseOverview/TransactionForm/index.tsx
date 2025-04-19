@@ -83,7 +83,6 @@ export function TransactionForm({
     }
 
     try {
-      // Extraer la fecha seleccionada para uso con created_at
       const selectedDate = values.transaction_date.toISOString();
       
       if (isEditing && transaction) {
@@ -95,7 +94,7 @@ export function TransactionForm({
             description: values.description,
             category_id: values.category,
             amount: values.amount,
-            created_at: selectedDate, // Usar created_at en lugar de transaction_date
+            transaction_date: selectedDate, // Usar transaction_date
           })
           .eq('id', transaction.id);
 
@@ -111,7 +110,7 @@ export function TransactionForm({
             category_id: values.category,
             amount: values.amount,
             user_id: user.id,
-            created_at: selectedDate, // Usar created_at en lugar de transaction_date
+            transaction_date: selectedDate, // Usar transaction_date
           });
 
         if (error) throw error;

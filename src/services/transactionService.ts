@@ -179,10 +179,10 @@ export async function getFinancialContextForAssistant(): Promise<FinancialContex
       transactionsSummary: {
         count: transactions.length,
         oldestDate: transactions.length > 0 ? 
-          format(new Date(transactions[transactions.length - 1].created_at || ''), 'PP') : 
+          format(new Date(transactions[transactions.length - 1].transaction_date || transactions[transactions.length - 1].created_at || ''), 'PP') : 
           'No data',
         newestDate: transactions.length > 0 ? 
-          format(new Date(transactions[0].created_at || ''), 'PP') : 
+          format(new Date(transactions[0].transaction_date || transactions[0].created_at || ''), 'PP') : 
           'No data',
       }
     };

@@ -42,7 +42,7 @@ const TransactionList = () => {
             *,
             category:categories(name, icon)
           `)
-          .order('created_at', { ascending: false })
+          .order('transaction_date', { ascending: false })
           .limit(5);
           
         if (error) throw error;
@@ -146,7 +146,7 @@ const TransactionList = () => {
                 <div className="text-left">
                   <p className="font-medium capitalize">{transaction.category?.name || 'Uncategorized'}</p>
                   <p className="text-xs text-gray-400">
-                    {formatDate(transaction.created_at)}
+                    {formatDate(transaction.transaction_date || transaction.created_at)}
                   </p>
                 </div>
               </div>
