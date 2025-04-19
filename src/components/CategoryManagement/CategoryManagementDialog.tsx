@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
+import { DisplaySection } from './DisplaySection';
 import { createCategory, updateCategory } from '@/services/categoryService';
 
 interface CategoryManagementDialogProps {
@@ -56,7 +57,7 @@ export function CategoryManagementDialog({ trigger }: CategoryManagementDialogPr
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-gray-800 border-gray-700 text-white">
         <DialogHeader>
           <DialogTitle>Manage Categories</DialogTitle>
         </DialogHeader>
@@ -67,17 +68,10 @@ export function CategoryManagementDialog({ trigger }: CategoryManagementDialogPr
             onCancel={handleCancel}
           />
         ) : (
-          <div className="space-y-4">
-            <Button
-              onClick={() => setShowForm(true)}
-              className="w-full"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Category
-            </Button>
-            <CategoryList onEdit={handleEdit} />
-          </div>
+          <DisplaySection
+            setShowForm={setShowForm}
+            onEdit={handleEdit}
+          />
         )}
       </DialogContent>
     </Dialog>
