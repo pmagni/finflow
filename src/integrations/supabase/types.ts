@@ -9,10 +9,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
-          category: string
+          category: string | null
+          category_id: string | null
           created_at: string | null
           currency: string | null
           description: string
@@ -22,7 +53,8 @@ export type Database = {
         }
         Insert: {
           amount: number
-          category: string
+          category?: string | null
+          category_id?: string | null
           created_at?: string | null
           currency?: string | null
           description: string
@@ -32,7 +64,8 @@ export type Database = {
         }
         Update: {
           amount?: number
-          category?: string
+          category?: string | null
+          category_id?: string | null
           created_at?: string | null
           currency?: string | null
           description?: string
@@ -40,7 +73,15 @@ export type Database = {
           type?: Database["public"]["Enums"]["transaction_type"]
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

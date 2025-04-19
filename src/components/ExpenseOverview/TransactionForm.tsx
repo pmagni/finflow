@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -28,6 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { CategoryManagementDialog } from '@/components/CategoryManagement/CategoryManagementDialog';
+import { Plus } from 'lucide-react';
 
 const formSchema = z.object({
   type: z.enum(["expense", "income"]),
@@ -70,7 +71,7 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
           type: values.type,
           description: values.description,
           category: values.category,
-          amount: values.amount, // now properly coerced to a number by zod
+          amount: values.amount,
         });
 
       if (error) throw error;
@@ -136,20 +137,29 @@ export function TransactionForm({ isOpen, onOpenChange }: TransactionFormProps) 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="bg-gray-800 border-gray-700">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-gray-800 border-gray-700">
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category.charAt(0).toUpperCase() + category.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="bg-gray-800 border-gray-700 flex-1">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-gray-800 border-gray-700">
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <CategoryManagementDialog
+                      trigger={
+                        <Button type="button" size="icon" variant="outline">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
