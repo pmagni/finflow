@@ -11,7 +11,7 @@ export interface Message {
   /** Contenido del mensaje */
   text: string;
   /** Indica si el mensaje es del asistente o del usuario */
-  sender: 'assistant' | 'user';
+  sender: 'user' | 'assistant';
   /** Marca de tiempo cuando se envió el mensaje */
   timestamp: Date;
 }
@@ -21,7 +21,7 @@ export interface Message {
  */
 export interface FinancialContext {
   /** Saldo actual considerando ingresos y gastos */
-  balance: number;
+  currentBalance: number;
   /** Total de ingresos registrados */
   totalIncome: number;
   /** Total de gastos registrados */
@@ -29,7 +29,7 @@ export interface FinancialContext {
   /** Diccionario que muestra gastos por categoría */
   expensesByCategory: Record<string, number>;
   /** Lista de transacciones recientes */
-  recentTransactions: any[];
+  recentTransactions: Transaction[];
   /** Resumen de las transacciones */
   transactionsSummary: {
     /** Cantidad total de transacciones */
@@ -39,6 +39,32 @@ export interface FinancialContext {
     /** Fecha de la transacción más reciente */
     newestDate: string;
   };
+  monthlySummary: MonthlySummary;
+  savingGoals: SavingGoal[];
+}
+
+export interface Transaction {
+  id: string;
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+  type: 'income' | 'expense';
+}
+
+export interface MonthlySummary {
+  totalIncome: number;
+  totalExpenses: number;
+  topCategory: string;
+  topExpenseAmount: number;
+}
+
+export interface SavingGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  dueDate?: string;
 }
 
 /**
@@ -55,6 +81,28 @@ export interface AssistantRequestPayload {
  * Estructura de respuesta del webhook del asistente
  */
 export interface AssistantResponsePayload {
-  /** Respuesta generada por el asistente */
-  output: string;
+  responseType: string;
+  message: string | AssistantMessage;
+  emotion?: string;
+  confidence?: number;
+  breakdown?: {
+    understanding?: string;
+    analysis?: string;
+    recommendation?: string;
+  };
+  actions?: AssistantAction[];
+  relatedQueries?: string[];
+  output?: string;
+}
+
+export interface AssistantMessage {
+  content: string;
+  details?: string[];
+  summary?: string;
+}
+
+export interface AssistantAction {
+  type: string;
+  description: string;
+  data?: any;
 } 
