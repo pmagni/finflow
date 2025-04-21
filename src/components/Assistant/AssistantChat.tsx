@@ -94,25 +94,53 @@ const AssistantChat = () => {
     
     // Caso 1: Si es un array, intentamos extraer el primer elemento
     if (Array.isArray(rawData) && rawData.length > 0) {
-      // Si el primer elemento tiene una propiedad 'output', la devolvemos
-      if (rawData[0].output && typeof rawData[0].output === 'object') {
-        return rawData[0].output as AssistantResponsePayload;
+      const firstItem = rawData[0];
+      
+      // Si el primer elemento es un objeto con propiedad output
+      if (firstItem && typeof firstItem === 'object' && 'output' in firstItem) {
+        // Caso 1.1: Si output es un objeto, lo devolvemos como la respuesta
+        if (typeof firstItem.output === 'object' && firstItem.output !== null) {
+          console.log('Procesando output como objeto:', firstItem.output);
+          return firstItem.output as AssistantResponsePayload;
+        }
+        
+        // Caso 1.2: Si output es un string u otro tipo primitivo, creamos un objeto con ese valor
+        console.log('Procesando output como valor primitivo:', firstItem.output);
+        return {
+          responseType: 'text',
+          message: String(firstItem.output)
+        };
       }
-      // Si no, devolvemos el primer elemento
-      return rawData[0] as AssistantResponsePayload;
+      
+      // Si no tiene propiedad output, devolvemos el primer elemento directamente
+      console.log('Procesando primer elemento del array:', firstItem);
+      return firstItem as AssistantResponsePayload;
     }
     
-    // Caso 2: Si ya es un objeto con la estructura correcta
-    if (rawData && typeof rawData === 'object') {
-      // Si tiene la propiedad 'output', devolvemos esa propiedad
-      if (rawData.output && typeof rawData.output === 'object') {
-        return rawData.output as AssistantResponsePayload;
+    // Caso 2: Si ya es un objeto con la estructura correcta (no un array)
+    if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
+      // Si tiene la propiedad 'output', procesamos el output
+      if ('output' in rawData) {
+        // Caso 2.1: Si output es un objeto, lo devolvemos como respuesta
+        if (typeof rawData.output === 'object' && rawData.output !== null) {
+          console.log('Procesando output de objeto como objeto:', rawData.output);
+          return rawData.output as AssistantResponsePayload;
+        }
+        
+        // Caso 2.2: Si output es un string u otro tipo primitivo, creamos un objeto con ese valor
+        console.log('Procesando output de objeto como valor primitivo:', rawData.output);
+        return {
+          responseType: 'text',
+          message: String(rawData.output)
+        };
       }
-      // Si no, devolvemos el objeto tal cual
+      
+      // Si no tiene propiedad output, devolvemos el objeto tal cual
+      console.log('Procesando objeto:', rawData);
       return rawData as AssistantResponsePayload;
     }
     
-    // Caso fallback: crear un objeto simple con mensaje
+    // Caso fallback: crear un objeto simple con mensaje genérico
     console.error('Formato inesperado de respuesta:', rawData);
     return {
       responseType: 'text',
