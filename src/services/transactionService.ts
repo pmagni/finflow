@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { FinancialContext } from '@/components/Assistant/types';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { FinancialContext, Transaction as AssistantTransaction, MonthlySummary, SavingGoal } from '@/components/Assistant/types';
 
 interface Transaction {
   id: string;
@@ -128,15 +128,110 @@ export async function getTransactionsByDateRange(startDate: Date, endDate: Date)
 }
 
 /**
+ * Formatear las transacciones internas al formato que espera el asistente
+ */
+function formatTransactionsForAssistant(transactions: Transaction[]): AssistantTransaction[] {
+  return transactions.map(transaction => ({
+    id: transaction.id,
+    amount: Number(transaction.amount),
+    description: transaction.description,
+    category: transaction.category?.name || 'Sin categoría',
+    date: transaction.transaction_date || transaction.created_at,
+    type: transaction.type
+  }));
+}
+
+/**
+ * Obtener datos del mes actual para resumen mensual
+ */
+async function getCurrentMonthSummary(transactions: Transaction[]): Promise<MonthlySummary> {
+  const now = new Date();
+  const startOfCurrentMonth = startOfMonth(now);
+  const endOfCurrentMonth = endOfMonth(now);
+  
+  // Filtrar transacciones del mes actual
+  const currentMonthTransactions = transactions.filter(t => {
+    const txDate = new Date(t.transaction_date || t.created_at);
+    return txDate >= startOfCurrentMonth && txDate <= endOfCurrentMonth;
+  });
+  
+  // Calcular ingresos y gastos del mes
+  const monthlyIncome = currentMonthTransactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+    
+  const monthlyExpenses = currentMonthTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  
+  // Encontrar la categoría con mayor gasto
+  const categoryExpenses: Record<string, number> = {};
+  
+  currentMonthTransactions
+    .filter(t => t.type === 'expense')
+    .forEach(transaction => {
+      const categoryName = transaction.category?.name || 'Sin categoría';
+      if (!categoryExpenses[categoryName]) {
+        categoryExpenses[categoryName] = 0;
+      }
+      categoryExpenses[categoryName] += Number(transaction.amount);
+    });
+  
+  let topCategory = 'Sin categoría';
+  let topExpenseAmount = 0;
+  
+  Object.entries(categoryExpenses).forEach(([category, amount]) => {
+    if (amount > topExpenseAmount) {
+      topCategory = category;
+      topExpenseAmount = amount;
+    }
+  });
+  
+  return {
+    totalIncome: monthlyIncome,
+    totalExpenses: monthlyExpenses,
+    topCategory,
+    topExpenseAmount
+  };
+}
+
+/**
+ * Obtener metas de ahorro (simuladas para este ejemplo)
+ */
+function getSavingGoals(): SavingGoal[] {
+  // En un escenario real, estas metas vendrían de la base de datos
+  return [
+    {
+      id: '1',
+      name: 'Fondo de emergencia',
+      targetAmount: 5000000,
+      currentAmount: 3250000,
+    },
+    {
+      id: '2',
+      name: 'Pagar tarjeta de crédito',
+      targetAmount: 2500000,
+      currentAmount: 750000,
+    },
+    {
+      id: '3',
+      name: 'Ahorrar para vacaciones',
+      targetAmount: 1200000,
+      currentAmount: 1080000,
+    }
+  ];
+}
+
+/**
  * Obtener resumen financiero para el asistente
  */
 export async function getFinancialContextForAssistant(): Promise<FinancialContext> {
   try {
     // Obtener todas las transacciones
-    const transactions = await getAllTransactions();
+    const allTransactions = await getAllTransactions();
     
     // Calcular el balance
-    const balance = transactions.reduce((total, transaction) => {
+    const currentBalance = allTransactions.reduce((total, transaction) => {
       if (transaction.type === 'income') {
         return total + Number(transaction.amount);
       } else {
@@ -147,7 +242,7 @@ export async function getFinancialContextForAssistant(): Promise<FinancialContex
     // Calcular gastos por categoría
     const expensesByCategory: Record<string, number> = {};
     
-    transactions.forEach(transaction => {
+    allTransactions.forEach(transaction => {
       if (transaction.type === 'expense' && transaction.category?.name) {
         const categoryName = transaction.category.name;
         if (!expensesByCategory[categoryName]) {
@@ -158,38 +253,56 @@ export async function getFinancialContextForAssistant(): Promise<FinancialContex
     });
     
     // Calcular ingresos totales
-    const totalIncome = transactions
+    const totalIncome = allTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
     // Calcular gastos totales
-    const totalExpenses = transactions
+    const totalExpenses = allTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
-    // Obtener transacciones recientes para el contexto
-    const recentTransactions = await getRecentTransactions(10);
+    // Obtener transacciones recientes para el contexto (ya formateadas)
+    const recentDbTransactions = await getRecentTransactions(20); // Aumentamos a 20 para dar más contexto
+    const recentTransactions = formatTransactionsForAssistant(recentDbTransactions);
+    
+    // Obtener resumen mensual
+    const monthlySummary = await getCurrentMonthSummary(allTransactions);
+    
+    // Obtener metas de ahorro
+    const savingGoals = getSavingGoals();
+    
+    // Imprimir para depuración
+    console.log('Contexto financiero preparado para el asistente:', {
+      recentTransactions: recentTransactions.length,
+      expensesByCategory: Object.keys(expensesByCategory).length,
+      monthlySummary,
+      savingGoals: savingGoals.length
+    });
     
     return {
-      balance,
+      currentBalance,
       totalIncome,
       totalExpenses,
       expensesByCategory,
       recentTransactions,
       transactionsSummary: {
-        count: transactions.length,
-        oldestDate: transactions.length > 0 ? 
-          format(new Date(transactions[transactions.length - 1].transaction_date || transactions[transactions.length - 1].created_at || ''), 'PP') : 
+        count: allTransactions.length,
+        oldestDate: allTransactions.length > 0 ? 
+          format(new Date(allTransactions[allTransactions.length - 1].transaction_date || allTransactions[allTransactions.length - 1].created_at || ''), 'PP') : 
           'No data',
-        newestDate: transactions.length > 0 ? 
-          format(new Date(transactions[0].transaction_date || transactions[0].created_at || ''), 'PP') : 
+        newestDate: allTransactions.length > 0 ? 
+          format(new Date(allTransactions[0].transaction_date || allTransactions[0].created_at || ''), 'PP') : 
           'No data',
-      }
+      },
+      monthlySummary,
+      savingGoals
     };
   } catch (error) {
     console.error('Error generating financial context:', error);
+    // Retornar valores por defecto en caso de error
     return {
-      balance: 0,
+      currentBalance: 0,
       totalIncome: 0,
       totalExpenses: 0,
       expensesByCategory: {},
@@ -198,7 +311,14 @@ export async function getFinancialContextForAssistant(): Promise<FinancialContex
         count: 0,
         oldestDate: 'No data',
         newestDate: 'No data',
-      }
+      },
+      monthlySummary: {
+        totalIncome: 0,
+        totalExpenses: 0,
+        topCategory: 'Sin categoría',
+        topExpenseAmount: 0
+      },
+      savingGoals: []
     };
   }
 } 
