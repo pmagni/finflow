@@ -105,4 +105,22 @@ export interface AssistantAction {
   type: string;
   description: string;
   data?: any;
+}
+
+/**
+ * Representa una conversación completa con el asistente
+ */
+export interface Conversation {
+  /** Identificador único de la conversación */
+  id: string;
+  /** ID del usuario propietario de la conversación */
+  user_id: string;
+  /** Título de la conversación */
+  title: string;
+  /** Fecha de creación */
+  created_at: string;
+  /** Fecha de última actualización */
+  updated_at: string;
+  /** Lista de mensajes en la conversación */
+  messages: Message[];
 } 

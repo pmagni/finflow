@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getFinancialContextForAssistant } from '@/services/transactionService';
-import { Send, Bot, User, AlertTriangle, ExternalLink, HelpCircle } from 'lucide-react';
+import { Send, Bot, User, AlertTriangle, HistoryIcon, Plus, Trash2, Edit, ArrowLeftRight, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
@@ -10,52 +10,82 @@ import {
   AssistantRequestPayload,
   AssistantResponsePayload,
   AssistantMessage,
-  AssistantAction
+  AssistantAction,
+  Conversation
 } from './types';
+import * as chatHistoryService from '@/services/localChatHistoryService';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 // URL del webhook
 const WEBHOOK_URL = 'https://pmagni.app.n8n.cloud/webhook-test/106ac574-b117-498c-bb7b-2f930489aea7';
 
 const AssistantChat = () => {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hola! Soy tu asistente financiero. ¿En qué puedo ayudarte hoy?',
-      sender: 'assistant',
-      timestamp: new Date(),
-    },
-  ]);
+  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [financialContext, setFinancialContext] = useState<FinancialContext | null>(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [errorState, setErrorState] = useState<string | null>(null);
   const [suggestedQueries, setSuggestedQueries] = useState<string[]>([]);
-
+  const [isNewConvDialogOpen, setIsNewConvDialogOpen] = useState(false);
+  const [newConvTitle, setNewConvTitle] = useState('');
+  const [isEditConvDialogOpen, setIsEditConvDialogOpen] = useState(false);
+  const [editConvTitle, setEditConvTitle] = useState('');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Efecto para desplazarse hacia abajo cuando se agregan nuevos mensajes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [currentConversation?.messages]);
 
-  // Cargar el contexto financiero al inicio
+  // Cargar conversaciones y contexto financiero al inicio
   useEffect(() => {
-    const loadFinancialContext = async () => {
+    const loadInitialData = async () => {
       try {
         setIsLoadingContext(true);
+        
+        // Cargar conversaciones
+        const loadedConversations = chatHistoryService.getUserConversations();
+        setConversations(loadedConversations);
+        
+        // Cargar la conversación actual o crear una nueva
+        const currentConversation = chatHistoryService.getCurrentOrCreateConversation();
+        setCurrentConversation(currentConversation);
+        
+        // Cargar el contexto financiero
         const context = await getFinancialContextForAssistant();
         setFinancialContext(context as FinancialContext);
       } catch (error) {
-        console.error('Error loading financial context:', error);
-        toast.error("Error al cargar tu información financiera");
-        setErrorState('No se pudo cargar el contexto financiero. Por favor, recarga la página.');
+        console.error('Error al cargar datos iniciales:', error);
+        toast.error("Error al cargar información inicial");
+        setErrorState('No se pudieron cargar los datos iniciales. Por favor, recarga la página.');
       } finally {
         setIsLoadingContext(false);
       }
     };
 
-    loadFinancialContext();
+    loadInitialData();
   }, []);
 
   // Extraer el objeto de respuesta del formato de la API
@@ -113,7 +143,7 @@ const AssistantChat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !currentConversation) return;
 
     // Limpiar sugerencias al enviar un nuevo mensaje
     setSuggestedQueries([]);
@@ -126,7 +156,25 @@ const AssistantChat = () => {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // Actualizar la UI localmente para mostrar el mensaje inmediatamente
+    const updatedMessages = [...currentConversation.messages, userMessage];
+    setCurrentConversation({
+      ...currentConversation,
+      messages: updatedMessages
+    });
+
+    // Guardar en el servicio de historial
+    chatHistoryService.addMessageToConversation(currentConversation.id, userMessage);
+
+    // Generar título para la conversación si es el primer mensaje del usuario
+    if (currentConversation.messages.filter(m => m.sender === 'user').length === 0) {
+      setTimeout(() => {
+        chatHistoryService.generateConversationTitle(currentConversation.id);
+        // Recargar las conversaciones para mostrar el nuevo título
+        refreshConversations();
+      }, 500);
+    }
+
     setInput('');
     setIsLoading(true);
     setErrorState(null);
@@ -200,12 +248,23 @@ const AssistantChat = () => {
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      // Actualizar la conversación con el mensaje del asistente
+      const updatedWithAssistantMessage = [...updatedMessages, assistantMessage];
+      setCurrentConversation({
+        ...currentConversation,
+        messages: updatedWithAssistantMessage
+      });
+
+      // Guardar en el servicio de historial
+      chatHistoryService.addMessageToConversation(currentConversation.id, assistantMessage);
       
       // Si hay consultas relacionadas, actualizar las sugerencias
       if (data.relatedQueries && Array.isArray(data.relatedQueries) && data.relatedQueries.length > 0) {
         setSuggestedQueries(data.relatedQueries);
       }
+      
+      // Recargar las conversaciones para actualizar la lista
+      refreshConversations();
       
     } catch (error: any) {
       console.error('Error enviando mensaje:', error);
@@ -221,11 +280,120 @@ const AssistantChat = () => {
         timestamp: new Date(),
       };
       
-      setMessages(prev => [...prev, errorMessage]);
+      // Actualizar la conversación con el mensaje de error
+      const updatedWithErrorMessage = [...updatedMessages, errorMessage];
+      setCurrentConversation({
+        ...currentConversation,
+        messages: updatedWithErrorMessage
+      });
+
+      // Guardar en el servicio de historial
+      chatHistoryService.addMessageToConversation(currentConversation.id, errorMessage);
+      
       toast.error("No se pudo obtener una respuesta del asistente");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Recargar la lista de conversaciones
+  const refreshConversations = () => {
+    const updatedConversations = chatHistoryService.getUserConversations();
+    setConversations(updatedConversations);
+    
+    // Actualizar también la conversación actual
+    if (currentConversation) {
+      const updatedCurrentConversation = chatHistoryService.getConversationById(currentConversation.id);
+      if (updatedCurrentConversation) {
+        setCurrentConversation(updatedCurrentConversation);
+      }
+    }
+  };
+
+  // Cambiar a una conversación específica
+  const handleSelectConversation = (conversation: Conversation) => {
+    setCurrentConversation(conversation);
+    chatHistoryService.setCurrentConversationId(conversation.id);
+    setSuggestedQueries([]);
+    setShowSidebar(false);
+  };
+
+  // Crear una nueva conversación
+  const handleCreateNewConversation = () => {
+    setIsNewConvDialogOpen(true);
+  };
+
+  // Guardar nueva conversación
+  const handleSaveNewConversation = () => {
+    const title = newConvTitle.trim() || 'Nueva conversación';
+    const conversationId = chatHistoryService.createConversation(title);
+    
+    // Refrescar conversaciones y establecer la nueva como actual
+    refreshConversations();
+    
+    // Cerrar diálogo y limpiar estado
+    setIsNewConvDialogOpen(false);
+    setNewConvTitle('');
+    
+    // Seleccionar la nueva conversación
+    const newConversation = chatHistoryService.getConversationById(conversationId);
+    if (newConversation) {
+      setCurrentConversation(newConversation);
+    }
+  };
+
+  // Abrir diálogo para editar título
+  const handleEditConversation = (e: React.MouseEvent, conversation: Conversation) => {
+    e.stopPropagation();
+    setEditConvTitle(conversation.title);
+    setIsEditConvDialogOpen(true);
+    
+    // Guardar temporalmente el ID de la conversación a editar
+    setCurrentConversation(conversation);
+  };
+
+  // Guardar título editado
+  const handleSaveEditedTitle = () => {
+    if (currentConversation) {
+      const title = editConvTitle.trim() || 'Conversación sin título';
+      chatHistoryService.updateConversationTitle(currentConversation.id, title);
+      refreshConversations();
+    }
+    
+    setIsEditConvDialogOpen(false);
+    setEditConvTitle('');
+  };
+
+  // Confirmar eliminación de conversación
+  const handleConfirmDelete = (e: React.MouseEvent, conversation: Conversation) => {
+    e.stopPropagation();
+    setCurrentConversation(conversation);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Eliminar conversación
+  const handleDeleteConversation = () => {
+    if (currentConversation) {
+      chatHistoryService.deleteConversation(currentConversation.id);
+      
+      // Obtener una nueva lista de conversaciones
+      const updatedConversations = chatHistoryService.getUserConversations();
+      setConversations(updatedConversations);
+      
+      // Si hay conversaciones, seleccionar la primera, sino crear una nueva
+      if (updatedConversations.length > 0) {
+        setCurrentConversation(updatedConversations[0]);
+        chatHistoryService.setCurrentConversationId(updatedConversations[0].id);
+      } else {
+        const newId = chatHistoryService.createConversation();
+        const newConversation = chatHistoryService.getConversationById(newId);
+        if (newConversation) {
+          setCurrentConversation(newConversation);
+        }
+      }
+    }
+    
+    setIsDeleteDialogOpen(false);
   };
 
   const handleSuggestedQuery = (query: string) => {
@@ -240,127 +408,330 @@ const AssistantChat = () => {
   };
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-8rem)] animate-fade-in">
-      <div className="bg-finflow-card rounded-2xl p-5 mb-4">
-        <h2 className="text-lg font-bold">Asistente Financiero</h2>
-        <p className="text-gray-400 text-sm mt-1">
-          Pregúntame sobre tus gastos, metas de ahorro o consejos financieros.
-        </p>
-        {errorState && (
-          <div className="mt-2 p-2 bg-red-950 border border-red-900 rounded-md text-red-200 text-xs flex items-start gap-2">
-            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold">Error:</p>
-              <p>{errorState}</p>
-            </div>
+    <div className="flex h-full animate-fade-in">
+      {/* Panel lateral de conversaciones */}
+      <div 
+        className={`fixed inset-y-0 left-0 z-20 transition-transform duration-300 transform
+                   lg:relative lg:translate-x-0 bg-gray-900 border-r border-gray-800 w-72
+                   ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <div className="flex flex-col h-full">
+          <div className="p-4 border-b border-gray-800 flex justify-between items-center">
+            <h2 className="text-lg font-semibold">Conversaciones</h2>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setShowSidebar(false)}
+              className="lg:hidden"
+            >
+              <X size={18} />
+            </Button>
           </div>
-        )}
-      </div>
-      
-      <div className="flex-1 overflow-y-auto bg-finflow-card rounded-2xl p-5 mb-4 space-y-4">
-        {isLoadingContext ? (
-          <div className="text-center py-4">
-            <p>Cargando tu información financiera...</p>
+          
+          <div className="p-2">
+            <Button 
+              onClick={handleCreateNewConversation}
+              className="w-full flex items-center justify-start gap-2"
+            >
+              <Plus size={16} />
+              Nueva conversación
+            </Button>
           </div>
-        ) : (
-          <>
-            {messages.map((message) => (
-              <div 
-                key={message.id}
-                className={`flex items-start gap-3 ${
-                  message.sender === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {message.sender === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-finflow-mint flex items-center justify-center">
-                    <Bot size={18} className="text-black" />
+          
+          <ScrollArea className="flex-1 px-2 py-2">
+            {conversations.length === 0 ? (
+              <p className="text-center text-gray-400 p-4">No hay conversaciones</p>
+            ) : (
+              <div className="space-y-2">
+                {conversations.map((conversation) => (
+                  <div 
+                    key={conversation.id}
+                    onClick={() => handleSelectConversation(conversation)}
+                    className={`rounded-lg p-3 cursor-pointer flex justify-between items-start group
+                                hover:bg-gray-800 transition-colors
+                                ${currentConversation?.id === conversation.id ? 'bg-gray-800' : 'bg-gray-900'}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{conversation.title}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {format(new Date(conversation.updated_at), 'dd MMM, HH:mm', { locale: es })}
+                      </p>
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={(e) => handleEditConversation(e, conversation)}
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 hover:text-red-400"
+                        onClick={(e) => handleConfirmDelete(e, conversation)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                )}
-                
-                <div 
-                  className={`max-w-[80%] p-3 rounded-2xl ${
-                    message.sender === 'user' 
-                      ? 'bg-finflow-mint text-black rounded-tr-none' 
-                      : 'bg-gray-800 rounded-tl-none'
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                  <p className="text-xs opacity-70 mt-1 text-right">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-                
-                {message.sender === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-                    <User size={18} />
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-            
-            {/* Sugerencias de consultas */}
-            {suggestedQueries.length > 0 && !isLoading && (
-              <div className="mt-4 pt-4 border-t border-gray-700">
-                <p className="text-xs text-gray-400 mb-2 flex items-center">
-                  <HelpCircle size={12} className="mr-1" />
-                  Preguntas sugeridas:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {suggestedQueries.map((query, index) => (
-                    <Button 
-                      key={index}
-                      variant="outline" 
-                      size="sm"
-                      className="text-xs bg-gray-800 border-gray-700"
-                      onClick={() => handleSuggestedQuery(query)}
-                    >
-                      {query}
-                    </Button>
-                  ))}
-                </div>
+                ))}
               </div>
             )}
-          </>
-        )}
-        
-        {isLoading && (
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-finflow-mint flex items-center justify-center">
-              <Bot size={18} className="text-black" />
+          </ScrollArea>
+        </div>
+      </div>
+
+      {/* Contenido principal */}
+      <div className="flex-1 flex flex-col max-h-[calc(100vh-8rem)] overflow-hidden">
+        <div className="bg-finflow-card rounded-2xl p-5 mb-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSidebar(!showSidebar)}
+                className="lg:hidden"
+              >
+                <Menu size={18} />
+              </Button>
+              <h2 className="text-lg font-bold">
+                {currentConversation?.title || 'Asistente Financiero'}
+              </h2>
             </div>
-            <div className="bg-gray-800 p-3 rounded-2xl rounded-tl-none max-w-[80%]">
-              <div className="flex space-x-2">
-                <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse"></div>
-                <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <HistoryIcon size={18} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleCreateNewConversation}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nueva conversación
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          <p className="text-gray-400 text-sm mt-1">
+            Pregúntame sobre tus gastos, metas de ahorro o consejos financieros.
+          </p>
+          
+          {errorState && (
+            <div className="mt-2 p-2 bg-red-950 border border-red-900 rounded-md text-red-200 text-xs flex items-start gap-2">
+              <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Error:</p>
+                <p>{errorState}</p>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+        
+        <div className="flex-1 overflow-y-auto bg-finflow-card rounded-2xl p-5 mb-4 space-y-4">
+          {isLoadingContext ? (
+            <div className="text-center py-4">
+              <p>Cargando tu información financiera...</p>
+            </div>
+          ) : (
+            <>
+              {currentConversation?.messages.map((message) => (
+                <div 
+                  key={message.id}
+                  className={`flex items-start gap-3 ${
+                    message.sender === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
+                >
+                  {message.sender === 'assistant' && (
+                    <div className="w-8 h-8 rounded-full bg-finflow-mint flex items-center justify-center">
+                      <Bot size={18} className="text-black" />
+                    </div>
+                  )}
+                  
+                  <div 
+                    className={`max-w-[80%] p-3 rounded-2xl ${
+                      message.sender === 'user' 
+                        ? 'bg-finflow-mint text-black rounded-tr-none' 
+                        : 'bg-gray-800 rounded-tl-none'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                    <p className="text-xs opacity-70 mt-1 text-right">
+                      {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  
+                  {message.sender === 'user' && (
+                    <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+                      <User size={18} />
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+              
+              {/* Sugerencias de consultas */}
+              {suggestedQueries.length > 0 && !isLoading && (
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <p className="text-xs text-gray-400 mb-2 flex items-center">
+                    <ArrowLeftRight className="mr-1 h-3 w-3" />
+                    Preguntas sugeridas:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedQueries.map((query, index) => (
+                      <Button 
+                        key={index}
+                        variant="outline" 
+                        size="sm"
+                        className="text-xs bg-gray-800 border-gray-700"
+                        onClick={() => handleSuggestedQuery(query)}
+                      >
+                        {query}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          
+          {isLoading && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-finflow-mint flex items-center justify-center">
+                <Bot size={18} className="text-black" />
+              </div>
+              <div className="bg-gray-800 p-3 rounded-2xl rounded-tl-none max-w-[80%]">
+                <div className="flex space-x-2">
+                  <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse"></div>
+                  <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="bg-finflow-card rounded-2xl p-3 flex items-center gap-2">
+          <Textarea
+            placeholder="Pregunta sobre tus finanzas..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="bg-gray-800 border-none text-white flex-1 min-h-10"
+            disabled={isLoading || isLoadingContext || !currentConversation}
+          />
+          <Button
+            onClick={handleSendMessage}
+            disabled={isLoading || isLoadingContext || !input.trim() || !currentConversation}
+            className="bg-finflow-mint hover:bg-finflow-mint-dark text-black"
+          >
+            {isLoading ? (
+              <span className="animate-pulse">...</span>
+            ) : (
+              <Send size={18} />
+            )}
+          </Button>
+        </div>
       </div>
       
-      <div className="bg-finflow-card rounded-2xl p-3 flex items-center gap-2">
-        <Textarea
-          placeholder="Pregunta sobre tus finanzas..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="bg-gray-800 border-none text-white flex-1 min-h-10"
-          disabled={isLoading || isLoadingContext}
-        />
-        <Button
-          onClick={handleSendMessage}
-          disabled={isLoading || isLoadingContext || !input.trim()}
-          className="bg-finflow-mint hover:bg-finflow-mint-dark text-black"
-        >
-          {isLoading ? (
-            <span className="animate-pulse">...</span>
-          ) : (
-            <Send size={18} />
-          )}
-        </Button>
-      </div>
+      {/* Diálogo para nueva conversación */}
+      <Dialog open={isNewConvDialogOpen} onOpenChange={setIsNewConvDialogOpen}>
+        <DialogContent className="bg-finflow-card border-gray-800 text-white">
+          <DialogHeader>
+            <DialogTitle>Nueva conversación</DialogTitle>
+            <DialogDescription>
+              Crea una nueva conversación con el asistente financiero
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Input
+              placeholder="Título de la conversación"
+              value={newConvTitle}
+              onChange={(e) => setNewConvTitle(e.target.value)}
+              className="bg-gray-800 border-gray-700"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsNewConvDialogOpen(false)}
+              className="bg-gray-800 border-gray-700"
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveNewConversation}>
+              Crear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo para editar título */}
+      <Dialog open={isEditConvDialogOpen} onOpenChange={setIsEditConvDialogOpen}>
+        <DialogContent className="bg-finflow-card border-gray-800 text-white">
+          <DialogHeader>
+            <DialogTitle>Editar conversación</DialogTitle>
+            <DialogDescription>
+              Modifica el título de esta conversación
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Input
+              placeholder="Título de la conversación"
+              value={editConvTitle}
+              onChange={(e) => setEditConvTitle(e.target.value)}
+              className="bg-gray-800 border-gray-700"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditConvDialogOpen(false)}
+              className="bg-gray-800 border-gray-700"
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEditedTitle}>
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo para confirmar eliminación */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-finflow-card border-gray-800 text-white">
+          <DialogHeader>
+            <DialogTitle>Eliminar conversación</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar esta conversación? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="bg-gray-800 border-gray-700"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeleteConversation}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
