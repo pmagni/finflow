@@ -512,8 +512,9 @@ const AssistantChat = () => {
       </div>
 
       {/* Contenido principal */}
-      <div className="flex-1 flex flex-col max-h-[calc(100vh-8rem)] overflow-hidden">
-        <div className="bg-finflow-card rounded-2xl p-5 mb-4">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Encabezado del chat - siempre visible */}
+        <div className="bg-finflow-card rounded-2xl p-5 mb-4 flex-shrink-0">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Button
@@ -559,96 +560,102 @@ const AssistantChat = () => {
           )}
         </div>
         
-        <div className="flex-1 overflow-y-auto bg-finflow-card rounded-2xl p-5 mb-4 space-y-4">
-          {isLoadingContext ? (
-            <div className="text-center py-4">
-              <p>Cargando tu información financiera...</p>
-            </div>
-          ) : (
-            <>
-              {currentConversation?.messages.map((message) => (
-                <div 
-                  key={message.id}
-                  className={`flex items-start gap-3 ${
-                    message.sender === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.sender === 'assistant' && (
-                    <div className="w-8 h-8 rounded-full bg-finflow-mint flex items-center justify-center">
-                      <Bot size={18} className="text-black" />
-                    </div>
-                  )}
-                  
-                  <div 
-                    className={`max-w-[80%] p-3 rounded-2xl ${
-                      message.sender === 'user' 
-                        ? 'bg-finflow-mint text-black rounded-tr-none' 
-                        : 'bg-gray-800 rounded-tl-none'
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                    <p className="text-xs opacity-70 mt-1 text-right">
-                      {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                  
-                  {message.sender === 'user' && (
-                    <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-                      <User size={18} />
-                    </div>
-                  )}
+        {/* Área de mensajes - altura flexible con scroll */}
+        <div className="flex-1 overflow-hidden bg-finflow-card rounded-2xl p-5 mb-4">
+          <ScrollArea className="h-full pr-2">
+            <div className="space-y-4">
+              {isLoadingContext ? (
+                <div className="text-center py-4">
+                  <p>Cargando tu información financiera...</p>
                 </div>
-              ))}
-              <div ref={messagesEndRef} />
-              
-              {/* Sugerencias de consultas */}
-              {suggestedQueries.length > 0 && !isLoading && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                  <p className="text-xs text-gray-400 mb-2 flex items-center">
-                    <ArrowLeftRight className="mr-1 h-3 w-3" />
-                    Preguntas sugeridas:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestedQueries.map((query, index) => (
-                      <Button 
-                        key={index}
-                        variant="outline" 
-                        size="sm"
-                        className="text-xs bg-gray-800 border-gray-700"
-                        onClick={() => handleSuggestedQuery(query)}
+              ) : (
+                <>
+                  {currentConversation?.messages.map((message) => (
+                    <div 
+                      key={message.id}
+                      className={`flex items-start gap-3 ${
+                        message.sender === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {message.sender === 'assistant' && (
+                        <div className="w-8 h-8 rounded-full bg-finflow-mint flex items-center justify-center">
+                          <Bot size={18} className="text-black" />
+                        </div>
+                      )}
+                      
+                      <div 
+                        className={`max-w-[80%] p-3 rounded-2xl ${
+                          message.sender === 'user' 
+                            ? 'bg-finflow-mint text-black rounded-tr-none' 
+                            : 'bg-gray-800 rounded-tl-none'
+                        }`}
                       >
-                        {query}
-                      </Button>
-                    ))}
+                        <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                        <p className="text-xs opacity-70 mt-1 text-right">
+                          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      
+                      {message.sender === 'user' && (
+                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+                          <User size={18} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                  
+                  {/* Sugerencias de consultas */}
+                  {suggestedQueries.length > 0 && !isLoading && (
+                    <div className="mt-4 pt-4 border-t border-gray-700">
+                      <p className="text-xs text-gray-400 mb-2 flex items-center">
+                        <ArrowLeftRight className="mr-1 h-3 w-3" />
+                        Preguntas sugeridas:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestedQueries.map((query, index) => (
+                          <Button 
+                            key={index}
+                            variant="outline" 
+                            size="sm"
+                            className="text-xs bg-gray-800 border-gray-700"
+                            onClick={() => handleSuggestedQuery(query)}
+                          >
+                            {query}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {isLoading && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-finflow-mint flex items-center justify-center">
+                    <Bot size={18} className="text-black" />
+                  </div>
+                  <div className="bg-gray-800 p-3 rounded-2xl rounded-tl-none max-w-[80%]">
+                    <div className="flex space-x-2">
+                      <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse"></div>
+                      <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                    </div>
                   </div>
                 </div>
               )}
-            </>
-          )}
-          
-          {isLoading && (
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-finflow-mint flex items-center justify-center">
-                <Bot size={18} className="text-black" />
-              </div>
-              <div className="bg-gray-800 p-3 rounded-2xl rounded-tl-none max-w-[80%]">
-                <div className="flex space-x-2">
-                  <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse"></div>
-                  <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="h-2 w-2 bg-gray-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                </div>
-              </div>
             </div>
-          )}
+          </ScrollArea>
         </div>
         
-        <div className="bg-finflow-card rounded-2xl p-3 flex items-center gap-2">
+        {/* Área de entrada - siempre visible al final */}
+        <div className="bg-finflow-card rounded-2xl p-3 flex items-center gap-2 flex-shrink-0 mb-1 z-10">
           <Textarea
             placeholder="Pregunta sobre tus finanzas..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="bg-gray-800 border-none text-white flex-1 min-h-10"
+            className="bg-gray-800 border-none text-white flex-1 min-h-10 resize-none"
             disabled={isLoading || isLoadingContext || !currentConversation}
           />
           <Button
@@ -665,7 +672,7 @@ const AssistantChat = () => {
         </div>
       </div>
       
-      {/* Diálogo para nueva conversación */}
+      {/* Diálogos */}
       <Dialog open={isNewConvDialogOpen} onOpenChange={setIsNewConvDialogOpen}>
         <DialogContent className="bg-finflow-card border-gray-800 text-white">
           <DialogHeader>
