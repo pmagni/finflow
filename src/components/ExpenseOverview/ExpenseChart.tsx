@@ -56,23 +56,22 @@ const ExpenseChart = () => {
       
       const spanishMonth = monthMap[engMonth] || engMonth;
       
+      // Crear un valor numérico para ordenar correctamente
+      const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(engMonth);
+      const sortDate = new Date(parseInt(year), monthIndex, 1);
+      
       return {
         month: `${spanishMonth} ${year}`,
         originalMonth: month,
+        sortDate,
         ...categories,
         total
       };
     });
     
-    // Ordenar por fecha
+    // Ordenar por fecha usando el valor numérico del sortDate
     chartData.sort((a, b) => {
-      const [aMonth, aYear] = a.originalMonth.split(' ');
-      const [bMonth, bYear] = b.originalMonth.split(' ');
-      
-      if (aYear !== bYear) return parseInt(aYear) - parseInt(bYear);
-      
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return months.indexOf(aMonth) - months.indexOf(bMonth);
+      return a.sortDate.getTime() - b.sortDate.getTime();
     });
     
     return chartData;
@@ -116,7 +115,7 @@ const ExpenseChart = () => {
   const allCategories = Array.from(
     new Set(
       allChartData.flatMap(data => 
-        Object.keys(data).filter(key => key !== 'month' && key !== 'total' && key !== 'originalMonth')
+        Object.keys(data).filter(key => key !== 'month' && key !== 'total' && key !== 'originalMonth' && key !== 'sortDate')
       )
     )
   );
