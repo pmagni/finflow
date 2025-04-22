@@ -99,7 +99,7 @@ export function TransactionsTable() {
   const [typeFilter, setTypeFilter] = useState('');
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Fetch transactions with their categories
   const fetchTransactions = async () => {
@@ -312,14 +312,26 @@ export function TransactionsTable() {
   };
 
   return (
-    <div className="w-full space-y-4">
-      <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
+    <div className="w-full space-y-2 sm:space-y-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2 sm:mb-4">
         <h2 className="text-xl font-bold">Transacciones</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+            <SelectTrigger className="w-[110px] bg-gray-800 border-gray-700 text-sm">
+              <SelectValue placeholder="Mostrar" />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-800 border-gray-700">
+              <SelectItem value="10">10 por pág.</SelectItem>
+              <SelectItem value="20">20 por pág.</SelectItem>
+              <SelectItem value="50">50 por pág.</SelectItem>
+              <SelectItem value="100">100 por pág.</SelectItem>
+            </SelectContent>
+          </Select>
+          
           <Button
             variant="outline"
             size="sm"
-            className={`${showFilters ? 'bg-finflow-mint hover:bg-finflow-mint-dark text-black' : 'bg-gray-800 border-gray-700'}`}
+            className={`text-sm ${showFilters ? 'bg-finflow-mint hover:bg-finflow-mint-dark text-black' : 'bg-gray-800 border-gray-700'}`}
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter className="mr-1 h-4 w-4" />
@@ -335,7 +347,7 @@ export function TransactionsTable() {
             <Button
               variant="ghost"
               size="sm"
-              className={`rounded-none ${viewMode === 'table' ? 'bg-gray-700' : 'bg-transparent'}`}
+              className={`text-sm px-2 rounded-none ${viewMode === 'table' ? 'bg-gray-700' : 'bg-transparent'}`}
               onClick={() => setViewMode('table')}
             >
               Tabla
@@ -343,7 +355,7 @@ export function TransactionsTable() {
             <Button
               variant="ghost"
               size="sm"
-              className={`rounded-none ${viewMode === 'card' ? 'bg-gray-700' : 'bg-transparent'}`}
+              className={`text-sm px-2 rounded-none ${viewMode === 'card' ? 'bg-gray-700' : 'bg-transparent'}`}
               onClick={() => setViewMode('card')}
             >
               Tarjetas
@@ -354,8 +366,8 @@ export function TransactionsTable() {
 
       {/* Filters section */}
       {showFilters && (
-        <div className="bg-gray-900 rounded-lg p-4 mb-4 animate-in slide-in-from-top duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gray-900 rounded-lg p-3 sm:p-4 mb-2 sm:mb-4 animate-in slide-in-from-top duration-300">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
               <Input
@@ -366,56 +378,60 @@ export function TransactionsTable() {
               />
             </div>
 
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="bg-gray-800 border-gray-700">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                <SelectItem value="expense">Gasto</SelectItem>
-                <SelectItem value="income">Ingreso</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="bg-gray-800 border-gray-700">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="expense">Gasto</SelectItem>
+                  <SelectItem value="income">Ingreso</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="bg-gray-800 border-gray-700">
-                <SelectValue placeholder="Categoría" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700 max-h-52">
-                <SelectItem value="all">Todas las categorías</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="bg-gray-800 border-gray-700">
+                  <SelectValue placeholder="Categoría" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 max-h-52">
+                  <SelectItem value="all">Todas</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="justify-start bg-gray-800 border-gray-700">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {dateFilter ? format(dateFilter, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700">
-                <CalendarComponent
-                  locale={es}
-                  mode="single"
-                  selected={dateFilter}
-                  onSelect={setDateFilter}
-                  initialFocus
-                  className="bg-gray-800"
-                />
-              </PopoverContent>
-            </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-start bg-gray-800 border-gray-700 col-span-2 sm:col-span-1">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <span className="truncate">
+                      {dateFilter ? format(dateFilter, 'dd/MM/yyyy') : 'Fecha'}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700">
+                  <CalendarComponent
+                    locale={es}
+                    mode="single"
+                    selected={dateFilter}
+                    onSelect={setDateFilter}
+                    initialFocus
+                    className="bg-gray-800"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-end mt-3 sm:mt-4">
             <Button 
               variant="outline" 
               onClick={clearFilters}
-              className="bg-gray-800 border-gray-700 hover:bg-gray-700"
+              className="bg-gray-800 border-gray-700 hover:bg-gray-700 text-sm"
               disabled={activeFiltersCount === 0}
             >
               <CircleSlash className="mr-1 h-4 w-4" />
@@ -427,30 +443,30 @@ export function TransactionsTable() {
 
       {/* Results count and pagination */}
       {!isLoading && (
-        <div className="flex flex-wrap justify-between items-center text-sm text-gray-400 mb-2">
-          <div>
-            Mostrando {paginatedTransactions.length} de {filteredTransactions.length} transacciones
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm text-gray-400 mb-2 gap-2">
+          <div className="text-center sm:text-left">
+            Mostrando {paginatedTransactions.length} de {filteredTransactions.length}
           </div>
           {totalPages > 1 && (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center sm:justify-end space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPage(page > 1 ? page - 1 : 1)}
                 disabled={page === 1}
-                className="h-8 px-2"
+                className="h-8 px-2 text-sm"
               >
                 Anterior
               </Button>
-              <span className="text-sm">
-                Página {page} de {totalPages}
+              <span className="text-sm min-w-[80px] text-center">
+                {page} de {totalPages}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPage(page < totalPages ? page + 1 : totalPages)}
                 disabled={page === totalPages}
-                className="h-8 px-2"
+                className="h-8 px-2 text-sm"
               >
                 Siguiente
               </Button>
@@ -461,82 +477,82 @@ export function TransactionsTable() {
 
       {/* Transactions display */}
       {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-pulse flex flex-col space-y-4 w-full">
-            <div className="h-10 bg-gray-700 rounded w-1/4"></div>
-            <div className="h-20 bg-gray-800 rounded"></div>
-            <div className="h-20 bg-gray-800 rounded"></div>
-            <div className="h-20 bg-gray-800 rounded"></div>
+        <div className="flex justify-center py-4 sm:py-8">
+          <div className="animate-pulse flex flex-col space-y-3 sm:space-y-4 w-full">
+            <div className="h-8 sm:h-10 bg-gray-700 rounded w-1/4"></div>
+            <div className="h-16 sm:h-20 bg-gray-800 rounded"></div>
+            <div className="h-16 sm:h-20 bg-gray-800 rounded"></div>
+            <div className="h-16 sm:h-20 bg-gray-800 rounded"></div>
           </div>
         </div>
       ) : filteredTransactions.length === 0 ? (
-        <div className="text-center py-8 bg-gray-800 rounded-lg">
+        <div className="text-center py-6 sm:py-8 bg-gray-800 rounded-lg">
           <p className="text-gray-400">No se encontraron transacciones.</p>
           {activeFiltersCount > 0 && (
             <Button 
               variant="link" 
               onClick={clearFilters}
-              className="mt-2 text-finflow-mint"
+              className="mt-2 text-finflow-mint text-sm"
             >
-              Limpiar filtros para ver todas las transacciones
+              Limpiar filtros
             </Button>
           )}
         </div>
       ) : viewMode === 'table' ? (
         // Table view
         <div className="rounded-md border border-gray-700 overflow-hidden">
-          <ScrollArea className="h-[calc(100vh-320px)] min-h-[300px]">
+          <ScrollArea className="h-[calc(100vh-280px)] sm:h-[calc(100vh-320px)] min-h-[300px]">
             <Table>
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-gray-800 hover:bg-gray-800">
                   <TableHead 
-                    className="cursor-pointer w-[120px]"
+                    className="cursor-pointer w-[100px] sm:w-[120px] text-sm"
                     onClick={() => handleSort('date')}
                   >
                     Fecha {getSortIndicator('date')}
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer"
+                    className="cursor-pointer text-sm"
                     onClick={() => handleSort('description')}
                   >
                     Descripción {getSortIndicator('description')}
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hidden md:table-cell"
+                    className="cursor-pointer hidden md:table-cell text-sm"
                     onClick={() => handleSort('category')}
                   >
                     Categoría {getSortIndicator('category')}
                   </TableHead>
-                  <TableHead className="hidden md:table-cell">Tipo</TableHead>
+                  <TableHead className="hidden md:table-cell text-sm">Tipo</TableHead>
                   <TableHead 
-                    className="cursor-pointer text-right"
+                    className="cursor-pointer text-right text-sm"
                     onClick={() => handleSort('amount')}
                   >
                     Monto {getSortIndicator('amount')}
                   </TableHead>
-                  <TableHead className="text-right w-[100px]">Acciones</TableHead>
+                  <TableHead className="text-right w-[90px] text-sm">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedTransactions.map((transaction) => (
                   <TableRow key={transaction.id} className="border-t border-gray-700 hover:bg-gray-800">
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium text-sm py-2 sm:py-4">
                       {transaction.transaction_date 
-                        ? format(new Date(transaction.transaction_date), 'dd MMM yyyy', { locale: es }) 
-                        : format(new Date(transaction.created_at || ''), 'dd MMM yyyy', { locale: es })}
+                        ? format(new Date(transaction.transaction_date), 'dd/MM/yy', { locale: es }) 
+                        : format(new Date(transaction.created_at || ''), 'dd/MM/yy', { locale: es })}
                     </TableCell>
-                    <TableCell className="font-medium truncate max-w-[200px]">
+                    <TableCell className="font-medium truncate max-w-[140px] sm:max-w-[200px] text-sm py-2 sm:py-4">
                       {transaction.description}
                       <div className="text-xs text-gray-400 md:hidden">
                         {transaction.category?.name || 'Sin categoría'}
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell className="hidden md:table-cell text-sm py-2 sm:py-4">
                       {transaction.category?.name 
                         ? transaction.category.name
                         : 'Sin categoría'}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell className="hidden md:table-cell text-sm py-2 sm:py-4">
                       <Badge className={`${
                         transaction.type === 'income' 
                           ? 'bg-green-900 hover:bg-green-800 text-green-200' 
@@ -545,29 +561,29 @@ export function TransactionsTable() {
                         {transaction.type === 'income' ? 'Ingreso' : 'Gasto'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="text-right font-medium text-sm py-2 sm:py-4">
                       <span className={transaction.type === 'income' ? 'text-green-300' : 'text-red-300'}>
                         {transaction.type === 'income' ? '+' : '-'}
                         {formatCurrency(transaction.amount)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right p-2">
+                    <TableCell className="text-right p-1 sm:p-2">
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEditClick(transaction)}
-                          className="h-7 w-7"
+                          className="h-6 w-6 sm:h-7 sm:w-7"
                         >
-                          <Edit className="h-3.5 w-3.5" />
+                          <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteClick(transaction)}
-                          className="h-7 w-7 hover:text-red-400"
+                          className="h-6 w-6 sm:h-7 sm:w-7 hover:text-red-400"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </Button>
                       </div>
                     </TableCell>
@@ -579,21 +595,21 @@ export function TransactionsTable() {
         </div>
       ) : (
         // Card view (better for mobile)
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
           {paginatedTransactions.map((transaction) => (
             <Card 
               key={transaction.id} 
               className="bg-gray-800 border-gray-700 hover:bg-gray-750 transition-colors"
             >
-              <div className="p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium">{transaction.description}</h3>
-                    <p className="text-sm text-gray-400">
+              <div className="p-3 sm:p-4">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-medium truncate">{transaction.description}</h3>
+                    <p className="text-sm text-gray-400 truncate">
                       {transaction.category?.name || 'Sin categoría'}
                     </p>
                   </div>
-                  <Badge className={`${
+                  <Badge className={`shrink-0 ${
                     transaction.type === 'income' 
                       ? 'bg-green-900 hover:bg-green-800 text-green-200' 
                       : 'bg-red-900 hover:bg-red-800 text-red-200'
@@ -602,11 +618,11 @@ export function TransactionsTable() {
                   </Badge>
                 </div>
                 
-                <div className="flex justify-between items-center mt-4">
+                <div className="flex justify-between items-center mt-3 sm:mt-4">
                   <div className="text-sm text-gray-400">
                     {transaction.transaction_date 
-                      ? format(new Date(transaction.transaction_date), 'PPP', { locale: es }) 
-                      : format(new Date(transaction.created_at || ''), 'PPP', { locale: es })}
+                      ? format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: es }) 
+                      : format(new Date(transaction.created_at || ''), 'dd/MM/yyyy', { locale: es })}
                   </div>
                   <div className={`font-bold ${transaction.type === 'income' ? 'text-green-300' : 'text-red-300'}`}>
                     {transaction.type === 'income' ? '+' : '-'}
@@ -614,12 +630,12 @@ export function TransactionsTable() {
                   </div>
                 </div>
                 
-                <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-gray-700">
+                <div className="flex justify-end gap-2 mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-gray-700">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleEditClick(transaction)}
-                    className="h-8"
+                    className="h-8 text-sm"
                   >
                     <Edit className="h-3.5 w-3.5 mr-1" />
                     Editar
@@ -628,7 +644,7 @@ export function TransactionsTable() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDeleteClick(transaction)}
-                    className="h-8 hover:text-red-400 hover:border-red-400"
+                    className="h-8 hover:text-red-400 hover:border-red-400 text-sm"
                   >
                     <Trash2 className="h-3.5 w-3.5 mr-1" />
                     Eliminar
@@ -637,78 +653,6 @@ export function TransactionsTable() {
               </div>
             </Card>
           ))}
-        </div>
-      )}
-
-      {/* Pagination control */}
-      {!isLoading && totalPages > 1 && (
-        <div className="flex justify-center mt-6">
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(1)}
-              disabled={page === 1}
-              className="h-8 px-2"
-            >
-              Primera
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page > 1 ? page - 1 : 1)}
-              disabled={page === 1}
-              className="h-8 px-2"
-            >
-              Anterior
-            </Button>
-            
-            <div className="flex space-x-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNumber: number;
-                if (totalPages <= 5) {
-                  pageNumber = i + 1;
-                } else if (page <= 3) {
-                  pageNumber = i + 1;
-                } else if (page >= totalPages - 2) {
-                  pageNumber = totalPages - 4 + i;
-                } else {
-                  pageNumber = page - 2 + i;
-                }
-                
-                return (
-                  <Button
-                    key={pageNumber}
-                    variant={page === pageNumber ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setPage(pageNumber)}
-                    className="h-8 w-8 px-0"
-                  >
-                    {pageNumber}
-                  </Button>
-                );
-              })}
-            </div>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page < totalPages ? page + 1 : totalPages)}
-              disabled={page === totalPages}
-              className="h-8 px-2"
-            >
-              Siguiente
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(totalPages)}
-              disabled={page === totalPages}
-              className="h-8 px-2"
-            >
-              Última
-            </Button>
-          </div>
         </div>
       )}
 

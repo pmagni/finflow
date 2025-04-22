@@ -411,7 +411,7 @@ const FinancialHealth = () => {
                       /{formatCurrency(goal.target)}
                     </span>
                   </p>
-                </div>
+              </div>
                 
                 <div className="relative pt-1">
                   <Progress 
@@ -425,7 +425,7 @@ const FinancialHealth = () => {
                   <p className="mt-1 text-right text-xs text-gray-400">
                     {Math.round(goal.progress * 100)}% completado
                   </p>
-                </div>
+              </div>
               </motion.div>
             ))
           )}
@@ -439,7 +439,7 @@ const FinancialHealth = () => {
         <div className="grid grid-cols-2 gap-3">
           {achievements.map((achievement, index) => (
             <motion.div 
-              key={index}
+              key={index} 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -497,9 +497,9 @@ const FinancialHealth = () => {
                   onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
                   className="bg-gray-800 border-gray-700 pl-7"
                 />
-              </div>
-            </div>
-          </div>
+        </div>
+      </div>
+    </div>
           
           <DialogFooter>
             <Button 

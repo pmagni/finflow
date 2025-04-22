@@ -119,8 +119,8 @@ const TransactionList = () => {
     }
     
     try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     } catch (error) {
       console.error('Error formatting date:', error);
       return 'Invalid date';
@@ -138,23 +138,23 @@ const TransactionList = () => {
           </div>
         ) : (
           transactions.map((transaction) => (
-            <div 
+          <div 
               key={transaction.id}
-              className="bg-gray-900 rounded-xl p-3 flex items-center justify-between card-hover"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-3">
+            className="bg-gray-900 rounded-xl p-3 flex items-center justify-between card-hover"
+          >
+            <div className="flex items-center">
+              <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-3">
                   {getCategoryIcon(transaction.category?.name)}
-                </div>
-                <div className="text-left">
+              </div>
+              <div className="text-left">
                   <p className="font-medium capitalize">{transaction.category?.name || 'Uncategorized'}</p>
                   <p className="text-xs text-gray-400">
                     {formatDate(transaction.transaction_date || transaction.created_at)}
                   </p>
-                </div>
               </div>
-              
-              <div className="text-right">
+            </div>
+            
+            <div className="text-right">
                 <p className="font-medium">{formatCurrency(transaction.amount || 0)}</p>
                 <p className="text-xs text-gray-400">{transaction.description || 'No description'}</p>
               </div>

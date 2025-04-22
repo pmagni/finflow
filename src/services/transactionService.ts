@@ -17,18 +17,113 @@ interface Transaction {
   };
 }
 
+export interface TransactionError extends Error {
+  code: string;
+}
+
 export interface MonthlyTransactionSummary {
-  expenses: {
-    byCategory: Record<string, number>;
-    total: number;
-  };
   income: {
-    byCategory: Record<string, number>;
     total: number;
+    byCategory: Record<string, number>;
+  };
+  expenses: {
+    total: number;
+    byCategory: Record<string, number>;
   };
   balance: number;
-  availableMonths: { month: number; year: number; label: string }[];
+  availableMonths: Array<{
+    month: number;
+    year: number;
+    label: string;
+  }>;
 }
+
+class TransactionService {
+  private static instance: TransactionService;
+  
+  private constructor() {}
+  
+  static getInstance(): TransactionService {
+    if (!TransactionService.instance) {
+      TransactionService.instance = new TransactionService();
+    }
+    return TransactionService.instance;
+  }
+
+  private handleError(error: any): never {
+    console.error('Error en el servicio de transacciones:', error);
+    throw new Error(error.message || 'Error desconocido') as TransactionError;
+  }
+
+  async getTransactionsByMonth(month: number, year: number): Promise<MonthlyTransactionSummary> {
+    try {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0);
+
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          category:categories(name, icon)
+        `)
+        .gte('transaction_date', startDate.toISOString())
+        .lte('transaction_date', endDate.toISOString());
+
+      if (error) throw error;
+
+      const summary: MonthlyTransactionSummary = {
+        income: { total: 0, byCategory: {} },
+        expenses: { total: 0, byCategory: {} },
+        balance: 0,
+        availableMonths: []
+      };
+
+      transactions.forEach(transaction => {
+        const amount = Number(transaction.amount);
+        const category = transaction.category?.name || 'Sin categoría';
+        
+        if (amount > 0) {
+          summary.income.total += amount;
+          summary.income.byCategory[category] = (summary.income.byCategory[category] || 0) + amount;
+        } else {
+          summary.expenses.total += Math.abs(amount);
+          summary.expenses.byCategory[category] = (summary.expenses.byCategory[category] || 0) + Math.abs(amount);
+        }
+      });
+
+      summary.balance = summary.income.total - summary.expenses.total;
+
+      // Obtener meses disponibles
+      const { data: availableMonths, error: monthsError } = await supabase
+        .from('transactions')
+        .select('transaction_date')
+        .order('transaction_date', { ascending: false });
+
+      if (monthsError) throw monthsError;
+
+      const uniqueMonths = new Set<string>();
+      availableMonths.forEach(transaction => {
+        const date = new Date(transaction.transaction_date);
+        uniqueMonths.add(`${date.getFullYear()}-${date.getMonth() + 1}`);
+      });
+
+      summary.availableMonths = Array.from(uniqueMonths).map(dateStr => {
+        const [year, month] = dateStr.split('-').map(Number);
+        return {
+          month,
+          year,
+          label: new Date(year, month - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+        };
+      });
+
+      return summary;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+}
+
+export const transactionService = TransactionService.getInstance();
 
 /**
  * Obtener todas las transacciones, ordenadas por fecha

@@ -1,0 +1,26 @@
+type,description,amount,user_id,transaction_date,currency,category_name
+expense,lunch,12,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-10-10,$,food
+expense,BIP,22,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-10-12,$,transport
+expense,super,85,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-10-28,$,groceries
+expense,cine,40,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-11-05,$,entertainment
+expense,lunch,18,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-11-11,$,food
+expense,Netflix,12,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-11-23,$,subscriptions
+expense,GGCC,90,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-12-01,$,utilities
+expense,Super,130,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-12-17,$,groceries
+expense,Lime,55,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-12-21,$,transport
+expense,regalo Juan,75,fb401632-d45e-44fc-86c9-5bb2ffb42346,2024-12-29,$,gifts
+expense,lunch,15,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-01-05,$,food
+expense,Bip,40,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-01-12,$,transport
+expense,carrete,30,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-01-20,$,entertainment
+expense,F1Tv,10,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-01-25,$,subscriptions
+expense,super,120,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-02-03,$,groceries
+expense,regalo Coni,60,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-02-07,$,gifts
+expense,lunch,18,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-02-11,$,food
+expense,Lime,60,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-02-25,$,transport
+expense,Luz,95,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-03-01,$,utilities
+expense,Whoosh,35,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-03-05,$,transport
+expense,lunch,15,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-03-12,$,food
+expense,lunch,22,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-03-15,$,food
+expense,teatro,50,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-03-19,$,entertainment
+expense,cine,45,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-03-22,$,entertainment
+expense,super,110,fb401632-d45e-44fc-86c9-5bb2ffb42346,2025-03-28,$,groceries 

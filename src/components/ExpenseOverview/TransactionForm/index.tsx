@@ -103,22 +103,22 @@ export function TransactionForm({
         toast.success("Transacción actualizada correctamente");
       } else {
         // Insert new transaction
-        const { error } = await supabase
-          .from('transactions')
-          .insert({
-            type: values.type,
-            description: values.description,
+      const { error } = await supabase
+        .from('transactions')
+        .insert({
+          type: values.type,
+          description: values.description,
             category_id: values.category,
-            amount: values.amount,
+          amount: values.amount,
             user_id: user.id,
             transaction_date: selectedDate,
             currency: 'CLP',
-          });
+        });
 
-        if (error) throw error;
+      if (error) throw error;
         toast.success("Transacción agregada correctamente");
       }
-      
+
       form.reset();
       onOpenChange(false);
     } catch (error) {

@@ -82,14 +82,14 @@ const Progress = React.forwardRef<
   };
 
   return (
-    <ProgressPrimitive.Root
-      ref={ref}
-      className={cn(
-        "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
-        className
-      )}
-      {...props}
-    >
+  <ProgressPrimitive.Root
+    ref={ref}
+    className={cn(
+      "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
+      className
+    )}
+    {...props}
+  >
       {markers.length > 0 && <Markers />}
       <Indicator />
       
@@ -105,9 +105,9 @@ const Progress = React.forwardRef<
             duration: 1.5, 
             ease: "linear" 
           }}
-        />
+    />
       )}
-    </ProgressPrimitive.Root>
+  </ProgressPrimitive.Root>
   );
 })
 Progress.displayName = ProgressPrimitive.Root.displayName

@@ -18,10 +18,10 @@ const TransactionsPage = () => {
           <h1 className="text-3xl font-bold">Transacciones</h1>
           <Button 
             onClick={() => setIsTransactionFormOpen(true)}
-            className="bg-finflow-mint hover:bg-finflow-mint-dark text-black"
+            className="bg-finflow-mint hover:bg-finflow-mint-dark text-black h-9 px-3"
           >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Transaction
+            <PlusCircle className="mr-1.5 h-4 w-4" />
+            Nueva
           </Button>
         </div>
 

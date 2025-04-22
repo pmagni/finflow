@@ -4,7 +4,7 @@ import { Expense, FinancialHealthScore } from "../types";
 export async function getExpensesByMonth() {
   try {
     const { data: transactions, error } = await supabase
-      .from('transactions')
+    .from('transactions')
       .select(`
         *,
         category:categories(name, icon)
@@ -13,34 +13,34 @@ export async function getExpensesByMonth() {
       .order('transaction_date', { ascending: false });
 
     if (error) throw error;
-      
-    const monthlyExpenses: Record<string, Record<string, number>> = {};
+
+  const monthlyExpenses: Record<string, Record<string, number>> = {};
     
     console.log(`Procesando ${transactions?.length || 0} transacciones de tipo expense`);
-    
-    transactions?.forEach(transaction => {
+  
+  transactions?.forEach(transaction => {
       const dateToUse = transaction.transaction_date || transaction.created_at;
       const date = new Date(dateToUse || '');
-      const month = date.toLocaleString('default', { month: 'short' });
-      const year = date.getFullYear();
-      const key = `${month} ${year}`;
-      
-      if (!monthlyExpenses[key]) {
-        monthlyExpenses[key] = {};
-      }
-      
+    const month = date.toLocaleString('default', { month: 'short' });
+    const year = date.getFullYear();
+    const key = `${month} ${year}`;
+    
+    if (!monthlyExpenses[key]) {
+      monthlyExpenses[key] = {};
+    }
+    
       const categoryName = transaction.category?.name || 'Uncategorized';
       
       if (!monthlyExpenses[key][categoryName]) {
         monthlyExpenses[key][categoryName] = 0;
-      }
-      
+    }
+    
       monthlyExpenses[key][categoryName] += Number(transaction.amount || 0);
     });
     
     console.log("Meses disponibles:", Object.keys(monthlyExpenses));
-    
-    return monthlyExpenses;
+  
+  return monthlyExpenses;
   } catch (error) {
     console.error('Error fetching expenses by month:', error);
     return {};
@@ -53,8 +53,8 @@ export function getFormattedDate(dateString: string | null | undefined) {
   }
   
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   } catch (error) {
     console.error('Error formatting date:', error);
     return 'Invalid date';
@@ -64,17 +64,17 @@ export function getFormattedDate(dateString: string | null | undefined) {
 export async function getTotalExpenses() {
   try {
     const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('*');
+    .from('transactions')
+    .select('*');
 
     if (error) throw error;
-  
-    return transactions?.reduce((total, transaction) => {
-      if (transaction.type === 'expense') {
+
+  return transactions?.reduce((total, transaction) => {
+    if (transaction.type === 'expense') {
         return total + Number(transaction.amount || 0);
-      }
-      return total;
-    }, 0) || 0;
+    }
+    return total;
+  }, 0) || 0;
   } catch (error) {
     console.error('Error calculating total expenses:', error);
     return 0;
@@ -84,13 +84,13 @@ export async function getTotalExpenses() {
 export async function getRecentExpenses(limit = 10) {
   try {
     const { data, error } = await supabase
-      .from('transactions')
+    .from('transactions')
       .select(`
         *,
         category:categories(name, icon)
       `)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
     if (error) throw error;
     return data || [];
@@ -121,18 +121,18 @@ export function getFinancialHealthScore(): FinancialHealthScore {
 export async function getCategoryTotal(category: string) {
   try {
     const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('*')
+    .from('transactions')
+    .select('*')
       .eq('category_id', category);
 
     if (error) throw error;
-  
-    return transactions?.reduce((total, transaction) => {
-      if (transaction.type === 'expense') {
+
+  return transactions?.reduce((total, transaction) => {
+    if (transaction.type === 'expense') {
         return total + Number(transaction.amount || 0);
-      }
-      return total;
-    }, 0) || 0;
+    }
+    return total;
+  }, 0) || 0;
   } catch (error) {
     console.error('Error calculating category total:', error);
     return 0;
@@ -142,28 +142,28 @@ export async function getCategoryTotal(category: string) {
 export async function getExpensesByCategory() {
   try {
     const { data: transactions, error } = await supabase
-      .from('transactions')
+    .from('transactions')
       .select(`
         *,
         category:categories(name, icon)
       `);
 
     if (error) throw error;
+
+  const categories: Record<string, number> = {};
   
-    const categories: Record<string, number> = {};
-    
-    transactions?.forEach(transaction => {
-      if (transaction.type === 'expense') {
+  transactions?.forEach(transaction => {
+    if (transaction.type === 'expense') {
         const categoryName = transaction.category?.name || 'Uncategorized';
         
         if (!categories[categoryName]) {
           categories[categoryName] = 0;
-        }
-        categories[categoryName] += Number(transaction.amount || 0);
       }
-    });
-    
-    return categories;
+        categories[categoryName] += Number(transaction.amount || 0);
+    }
+  });
+  
+  return categories;
   } catch (error) {
     console.error('Error fetching expenses by category:', error);
     return {};

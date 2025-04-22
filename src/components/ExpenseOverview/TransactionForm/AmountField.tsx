@@ -18,14 +18,14 @@ export function AmountField() {
           <FormControl>
             <div className="relative">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
-              <Input
-                type="number"
+            <Input
+              type="number"
                 step="1000"
                 min="0"
                 placeholder="Ingrese monto en pesos chilenos"
                 className="bg-gray-800 border-gray-700 pl-7"
-                {...field}
-              />
+              {...field}
+            />
             </div>
           </FormControl>
           <FormMessage />
