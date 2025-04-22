@@ -1,15 +1,26 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { BarChart3, Calculator, MessageSquare, Home, DollarSign, FileText, User2 } from 'lucide-react';
+import { HomeIcon, BanknoteIcon, BrainCircuitIcon } from 'lucide-react';
 
 const Navigation = () => {
   const location = useLocation();
   
   const menuItems = [
-    { label: 'Dashboard', path: '/', icon: <Home size={18} /> },
-    { label: 'Transactions', path: '/transactions', icon: <FileText size={18} /> },
-    { label: 'Debt Assassin', path: '/debt', icon: <DollarSign size={18} /> },
-    { label: 'Financial Assistant', path: '/assistant', icon: <User2 size={18} /> },
+    { 
+      label: 'Dashboard', 
+      path: '/', 
+      icon: <HomeIcon size={22} strokeWidth={1.5} /> 
+    },
+    { 
+      label: 'My Debts', 
+      path: '/debt', 
+      icon: <BanknoteIcon size={22} strokeWidth={1.5} /> 
+    },
+    { 
+      label: 'Financial AI', 
+      path: '/assistant', 
+      icon: <BrainCircuitIcon size={22} strokeWidth={1.5} /> 
+    },
   ];
   
   return (
@@ -20,12 +31,14 @@ const Navigation = () => {
           <Link 
             to={item.path} 
             key={item.path}
-            className={`flex flex-col items-center p-2 rounded-lg transition-all ${
-              isActive ? 'text-finflow-mint' : 'text-gray-400 hover:text-gray-200'
+            className={`flex flex-col items-center p-3 rounded-lg transition-all ${
+              isActive 
+                ? 'text-finflow-mint bg-gray-800 bg-opacity-50' 
+                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800 hover:bg-opacity-30'
             }`}
           >
             {item.icon}
-            <span className="text-xs mt-1">{item.label}</span>
+            <span className="text-xs font-medium mt-1.5">{item.label}</span>
           </Link>
         );
       })}

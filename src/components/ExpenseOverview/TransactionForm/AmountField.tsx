@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   FormField,
@@ -15,15 +14,19 @@ export function AmountField() {
       name="amount"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Amount</FormLabel>
+          <FormLabel>Monto (CLP)</FormLabel>
           <FormControl>
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="Enter amount"
-              className="bg-gray-800 border-gray-700"
-              {...field}
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+              <Input
+                type="number"
+                step="1000"
+                min="0"
+                placeholder="Ingrese monto en pesos chilenos"
+                className="bg-gray-800 border-gray-700 pl-7"
+                {...field}
+              />
+            </div>
           </FormControl>
           <FormMessage />
         </FormItem>

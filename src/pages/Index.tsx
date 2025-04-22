@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { CategoryManagementDialog } from '@/components/CategoryManagement/CategoryManagementDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
+import { formatCurrency } from '@/utils/formatters';
 
 const Index = () => {
   const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
@@ -74,7 +76,7 @@ const Index = () => {
               size="sm"
             >
               <Plus className="mr-1" size={16} />
-              Add Transaction
+              Agregar Transacción
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -84,10 +86,20 @@ const Index = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem asChild>
+                  <Link to="/ui-components" className="w-full cursor-pointer">
+                    Componentes UI
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <CategoryManagementDialog />
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="w-full cursor-pointer">
+                    Configuración
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
-                  Sign Out
+                  Cerrar Sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -96,7 +108,7 @@ const Index = () => {
         
         <div className="mb-8">
           <h2 className="text-gray-400 text-sm">Balance</h2>
-          <h1 className="text-4xl font-bold">${balance.toFixed(2)}</h1>
+          <h1 className="text-4xl font-bold">{formatCurrency(balance)}</h1>
         </div>
         
         <FinancialHealth />

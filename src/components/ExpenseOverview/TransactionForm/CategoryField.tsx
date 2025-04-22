@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import {
@@ -24,19 +23,18 @@ import { Category } from './TransactionFormSchema';
 export function CategoryField() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { watch } = useFormContext();
+  const { control, watch, setValue } = useFormContext();
   
-  // Watch for changes to the transaction type
-  const transactionType = watch("type");
+  const selectedType = watch('type');
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setIsLoading(true);
-        const data = await getCategories();
-        setCategories(data);
+        const fetchedCategories = await getCategories() as Category[];
+        setCategories(fetchedCategories);
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        console.error('Error fetching categories:', error);
       } finally {
         setIsLoading(false);
       }
@@ -45,37 +43,44 @@ export function CategoryField() {
     fetchCategories();
   }, []);
 
-  // Filter categories based on the selected transaction type
+  // Cuando cambia el tipo de transacción, resetear la categoría si no es compatible
+  useEffect(() => {
+    setValue('category', ''); // Se establecerá como undefined en el formulario
+  }, [selectedType, setValue]);
+
   const filteredCategories = categories.filter(
-    (category) => category.transaction_type === transactionType
+    category => category.transaction_type === selectedType
   );
 
   return (
     <FormField
+      control={control}
       name="category"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Category</FormLabel>
+          <FormLabel>Categoría</FormLabel>
           <div className="flex gap-2">
-            <Select onValueChange={field.onChange} value={field.value}>
+            <Select 
+              onValueChange={field.onChange} 
+              value={field.value || undefined}
+              defaultValue={undefined}
+            >
               <FormControl>
-                <SelectTrigger className="bg-gray-800 border-gray-700 flex-1">
-                  <SelectValue placeholder="Select category" />
+                <SelectTrigger className="bg-gray-800 border-gray-700">
+                  <SelectValue placeholder="Seleccione una categoría" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent className="bg-gray-800 border-gray-700">
                 {isLoading ? (
-                  <SelectItem value="loading" disabled>Loading categories...</SelectItem>
-                ) : filteredCategories.length === 0 ? (
-                  <SelectItem value="no-categories" disabled>
-                    No {transactionType} categories found
-                  </SelectItem>
-                ) : (
-                  filteredCategories.map((category) => (
+                  <SelectItem value="loading" disabled>Cargando categorías...</SelectItem>
+                ) : filteredCategories.length > 0 ? (
+                  filteredCategories.map(category => (
                     <SelectItem key={category.id} value={category.id}>
-                      {category.name.charAt(0).toUpperCase() + category.name.slice(1)}
+                      {category.name}
                     </SelectItem>
                   ))
+                ) : (
+                  <SelectItem value="no-categories" disabled>Sin categorías disponibles</SelectItem>
                 )}
               </SelectContent>
             </Select>

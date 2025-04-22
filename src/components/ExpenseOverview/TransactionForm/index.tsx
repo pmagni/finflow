@@ -47,7 +47,7 @@ export function TransactionForm({
     defaultValues: {
       type: "expense",
       description: "",
-      category: "",
+      category: undefined,
       amount: undefined,
       transaction_date: new Date(),
     },
@@ -69,7 +69,7 @@ export function TransactionForm({
       form.reset({
         type: "expense",
         description: "",
-        category: "",
+        category: undefined,
         amount: undefined,
         transaction_date: new Date(),
       });
@@ -94,12 +94,13 @@ export function TransactionForm({
             description: values.description,
             category_id: values.category,
             amount: values.amount,
-            transaction_date: selectedDate, // Usar transaction_date
+            transaction_date: selectedDate,
+            currency: 'CLP',
           })
           .eq('id', transaction.id);
 
         if (error) throw error;
-        toast.success("Transaction updated successfully");
+        toast.success("Transacción actualizada correctamente");
       } else {
         // Insert new transaction
         const { error } = await supabase
@@ -110,18 +111,19 @@ export function TransactionForm({
             category_id: values.category,
             amount: values.amount,
             user_id: user.id,
-            transaction_date: selectedDate, // Usar transaction_date
+            transaction_date: selectedDate,
+            currency: 'CLP',
           });
 
         if (error) throw error;
-        toast.success("Transaction added successfully");
+        toast.success("Transacción agregada correctamente");
       }
       
       form.reset();
       onOpenChange(false);
     } catch (error) {
       console.error('Error with transaction:', error);
-      toast.error(`Failed to ${isEditing ? 'update' : 'add'} transaction`);
+      toast.error(`No se pudo ${isEditing ? 'actualizar' : 'agregar'} la transacción`);
     }
   };
 
@@ -132,9 +134,9 @@ export function TransactionForm({
         aria-describedby="transaction-form-description"
       >
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit' : 'Add'} Transaction</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar' : 'Agregar'} Transacción</DialogTitle>
           <DialogDescription id="transaction-form-description">
-            {isEditing ? 'Edit the' : 'Fill out the form below to add a new'} transaction.
+            {isEditing ? 'Edita la' : 'Completa el formulario para agregar una nueva'} transacción.
           </DialogDescription>
         </DialogHeader>
         <FormProvider {...form}>
@@ -152,13 +154,13 @@ export function TransactionForm({
                   onClick={() => onOpenChange(false)}
                   className="bg-gray-800 border-gray-700 hover:bg-gray-700"
                 >
-                  Cancel
+                  Cancelar
                 </Button>
                 <Button
                   type="submit"
                   className="bg-finflow-mint hover:bg-finflow-mint-dark text-black"
                 >
-                  {isEditing ? 'Update' : 'Add'} Transaction
+                  {isEditing ? 'Actualizar' : 'Agregar'} Transacción
                 </Button>
               </div>
             </form>

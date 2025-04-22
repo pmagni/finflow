@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { useFormContext } from "react-hook-form";
 import {
   FormField,
   FormItem,
@@ -10,15 +10,18 @@ import {
 import { Input } from "@/components/ui/input";
 
 export function DescriptionField() {
+  const { control } = useFormContext();
+
   return (
     <FormField
+      control={control}
       name="description"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Description</FormLabel>
+          <FormLabel>Descripción</FormLabel>
           <FormControl>
             <Input
-              placeholder="Enter description"
+              placeholder="Ingrese una descripción"
               className="bg-gray-800 border-gray-700"
               {...field}
             />

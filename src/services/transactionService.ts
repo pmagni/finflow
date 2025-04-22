@@ -17,6 +17,19 @@ interface Transaction {
   };
 }
 
+export interface MonthlyTransactionSummary {
+  expenses: {
+    byCategory: Record<string, number>;
+    total: number;
+  };
+  income: {
+    byCategory: Record<string, number>;
+    total: number;
+  };
+  balance: number;
+  availableMonths: { month: number; year: number; label: string }[];
+}
+
 /**
  * Obtener todas las transacciones, ordenadas por fecha
  */
@@ -35,6 +48,120 @@ export async function getAllTransactions() {
   } catch (error) {
     console.error('Error fetching transactions:', error);
     return [];
+  }
+}
+
+/**
+ * Obtener transacciones por mes y año específicos
+ */
+export async function getTransactionsByMonth(month: number, year: number): Promise<MonthlyTransactionSummary> {
+  try {
+    // Crear fechas para el primer día y último día del mes
+    const startDate = new Date(year, month - 1, 1); // month es 1-12, pero Date usa 0-11
+    const endDate = endOfMonth(startDate);
+    
+    // Formatear fechas para Supabase
+    const startDateStr = startDate.toISOString();
+    const endDateStr = endDate.toISOString();
+    
+    // Obtener transacciones del mes especificado
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        category:categories(name, icon)
+      `)
+      .gte('transaction_date', startDateStr)
+      .lte('transaction_date', endDateStr)
+      .order('transaction_date', { ascending: false });
+
+    if (error) throw error;
+    
+    // Inicializar estructuras de datos para el resumen
+    const summary: MonthlyTransactionSummary = {
+      expenses: {
+        byCategory: {},
+        total: 0
+      },
+      income: {
+        byCategory: {},
+        total: 0
+      },
+      balance: 0,
+      availableMonths: []
+    };
+    
+    // Agrupar transacciones por tipo y categoría
+    transactions?.forEach(transaction => {
+      const amount = Number(transaction.amount);
+      const categoryName = transaction.category?.name || 'Sin categoría';
+      
+      if (transaction.type === 'expense') {
+        if (!summary.expenses.byCategory[categoryName]) {
+          summary.expenses.byCategory[categoryName] = 0;
+        }
+        summary.expenses.byCategory[categoryName] += amount;
+        summary.expenses.total += amount;
+      } else if (transaction.type === 'income') {
+        if (!summary.income.byCategory[categoryName]) {
+          summary.income.byCategory[categoryName] = 0;
+        }
+        summary.income.byCategory[categoryName] += amount;
+        summary.income.total += amount;
+      }
+    });
+    
+    // Calcular balance
+    summary.balance = summary.income.total - summary.expenses.total;
+    
+    // Obtener la lista de meses disponibles en la base de datos
+    const { data: distinctDates, error: datesError } = await supabase
+      .from('transactions')
+      .select('transaction_date')
+      .order('transaction_date', { ascending: false });
+    
+    if (!datesError && distinctDates) {
+      const monthsSet = new Set<string>();
+      
+      distinctDates.forEach(item => {
+        if (item.transaction_date) {
+          const date = new Date(item.transaction_date);
+          const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+          monthsSet.add(monthKey);
+        }
+      });
+      
+      summary.availableMonths = Array.from(monthsSet).map(key => {
+        const [year, month] = key.split('-').map(Number);
+        const date = new Date(year, month - 1, 1);
+        
+        // Nombre del mes en español
+        const monthName = date.toLocaleString('es-ES', { month: 'long' });
+        const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        
+        return {
+          month,
+          year,
+          label: `${capitalizedMonth} ${year}`
+        };
+      });
+      
+      // Ordenar por fecha descendente (más reciente primero)
+      summary.availableMonths.sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.month - a.month;
+      });
+    }
+    
+    return summary;
+  } catch (error) {
+    console.error('Error fetching transactions by month:', error);
+    return {
+      expenses: { byCategory: {}, total: 0 },
+      income: { byCategory: {}, total: 0 },
+      balance: 0,
+      availableMonths: []
+    };
   }
 }
 

@@ -11,6 +11,8 @@ import AssistantPage from "./pages/AssistantPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
+import UIComponentsPage from "./pages/UIComponentsPage";
+import SettingsPage from "./pages/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +54,22 @@ const App = () => (
               element={
                 <RequireAuth>
                   <TransactionsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/ui-components"
+              element={
+                <RequireAuth>
+                  <UIComponentsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <RequireAuth>
+                  <SettingsPage />
                 </RequireAuth>
               }
             />
