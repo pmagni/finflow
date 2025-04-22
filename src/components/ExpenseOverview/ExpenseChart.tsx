@@ -39,12 +39,11 @@ const ExpenseChart = () => {
       const pages = Math.ceil(processedData.length / monthsPerPage);
       setTotalPages(pages);
       
-      // Iniciar en la página más reciente (última página)
-      const lastPage = Math.max(0, pages - 1);
-      setCurrentPage(lastPage);
+      // Iniciar en la primera página (meses más recientes)
+      setCurrentPage(0);
       
       // Actualizar datos visibles
-      updateVisibleData(processedData, lastPage);
+      updateVisibleData(processedData, 0);
     }
   }, [monthlyExpenses]);
   
@@ -76,8 +75,8 @@ const ExpenseChart = () => {
       };
     });
     
-    // Ordenar cronológicamente (enero a diciembre)
-    data.sort((a, b) => a.sortOrder - b.sortOrder);
+    // Ordenar cronológicamente (más reciente primero)
+    data.sort((a, b) => b.sortOrder - a.sortOrder);
     
     return data;
   };
@@ -85,7 +84,12 @@ const ExpenseChart = () => {
   const updateVisibleData = (data: any[], page: number) => {
     const startIndex = page * monthsPerPage;
     const endIndex = startIndex + monthsPerPage;
-    setVisibleChartData(data.slice(startIndex, endIndex));
+    
+    // Obtener los datos para la página actual
+    const pageData = data.slice(startIndex, endIndex);
+    
+    // Invertir el orden para que el más reciente aparezca a la derecha en el gráfico
+    setVisibleChartData([...pageData].reverse());
   };
   
   const handlePreviousPage = () => {
@@ -198,7 +202,7 @@ const ExpenseChart = () => {
             className="h-7 w-7" 
             disabled={!hasPreviousPage}
             onClick={handlePreviousPage}
-            title="Ver meses anteriores"
+            title="Ver meses más antiguos"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -213,7 +217,7 @@ const ExpenseChart = () => {
             className="h-7 w-7"
             disabled={!hasNextPage}
             onClick={handleNextPage}
-            title="Ver meses más recientes"
+            title="Ver meses más antiguos"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
