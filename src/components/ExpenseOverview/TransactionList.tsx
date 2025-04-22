@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getRecentExpenses } from '@/services/expenseService';
+import { formatCurrency } from '@/utils/formatters';
 import {
   ShoppingBag,
   Coffee,
@@ -8,7 +10,8 @@ import {
   Gift,
   Tv,
   Home,
-  BadgeDollarSign
+  BadgeDollarSign,
+  ArrowRight
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -152,7 +155,7 @@ const TransactionList = () => {
               </div>
               
               <div className="text-right">
-                <p className="font-medium">{transaction.currency || '$'}{transaction.amount || 0}</p>
+                <p className="font-medium">{formatCurrency(transaction.amount || 0)}</p>
                 <p className="text-xs text-gray-400">{transaction.description || 'No description'}</p>
               </div>
             </div>
@@ -160,9 +163,10 @@ const TransactionList = () => {
         )}
       </div>
       
-      <button className="w-full mt-4 text-finflow-mint text-sm hover:underline">
+      <Link to="/transactions" className="flex items-center justify-center w-full mt-4 text-finflow-mint text-sm hover:underline">
         See all transactions
-      </button>
+        <ArrowRight className="ml-1" size={14} />
+      </Link>
     </div>
   );
 };
