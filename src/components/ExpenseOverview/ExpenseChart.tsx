@@ -2,12 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getExpensesByMonth } from '@/services/expenseService';
 import { formatCurrency } from '@/utils/formatters';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ExpenseChart = () => {
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   const [monthlyExpenses, setMonthlyExpenses] = useState<Record<string, Record<string, number>>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [allChartData, setAllChartData] = useState<any[]>([]);
+  const [visibleChartData, setVisibleChartData] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const monthsPerPage = 3;
   
   useEffect(() => {
     const fetchData = async () => {
@@ -27,7 +33,18 @@ const ExpenseChart = () => {
   useEffect(() => {
     if (Object.keys(monthlyExpenses).length > 0) {
       const processedData = prepareChartData();
-      setChartData(processedData);
+      setAllChartData(processedData);
+      
+      // Calcular el número total de páginas
+      const pages = Math.ceil(processedData.length / monthsPerPage);
+      setTotalPages(pages);
+      
+      // Iniciar en la página más reciente (última página)
+      const lastPage = Math.max(0, pages - 1);
+      setCurrentPage(lastPage);
+      
+      // Actualizar datos visibles
+      updateVisibleData(processedData, lastPage);
     }
   }, [monthlyExpenses]);
   
@@ -62,8 +79,29 @@ const ExpenseChart = () => {
     // Ordenar cronológicamente (enero a diciembre)
     data.sort((a, b) => a.sortOrder - b.sortOrder);
     
-    // Mostrar solo los últimos 6 meses o todos si hay menos
-    return data.slice(-6);
+    return data;
+  };
+  
+  const updateVisibleData = (data: any[], page: number) => {
+    const startIndex = page * monthsPerPage;
+    const endIndex = startIndex + monthsPerPage;
+    setVisibleChartData(data.slice(startIndex, endIndex));
+  };
+  
+  const handlePreviousPage = () => {
+    if (currentPage > 0) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      updateVisibleData(allChartData, newPage);
+    }
+  };
+  
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      const newPage = currentPage + 1;
+      setCurrentPage(newPage);
+      updateVisibleData(allChartData, newPage);
+    }
   };
   
   if (isLoading) {
@@ -79,7 +117,7 @@ const ExpenseChart = () => {
   
   const allCategories = Array.from(
     new Set(
-      chartData.flatMap(data => 
+      allChartData.flatMap(data => 
         Object.keys(data).filter(key => key !== 'month' && key !== 'total' && key !== 'sortOrder')
       )
     )
@@ -144,20 +182,54 @@ const ExpenseChart = () => {
     return null;
   };
   
+  // Determinar si hay páginas anteriores o siguientes
+  const hasPreviousPage = currentPage > 0;
+  const hasNextPage = currentPage < totalPages - 1;
+  
   return (
     <div className="bg-finflow-card rounded-2xl p-5 mb-5 animate-fade-in">
-      <h2 className="text-lg font-bold mb-4">Detalle Gastos Mensuales</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-bold">Detalle Gastos Mensuales</h2>
+        
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="h-7 w-7" 
+            disabled={!hasPreviousPage}
+            onClick={handlePreviousPage}
+            title="Ver meses anteriores"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <span className="text-xs text-gray-400">
+            {visibleChartData.length > 0 ? `${currentPage + 1} / ${totalPages}` : ''}
+          </span>
+          
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="h-7 w-7"
+            disabled={!hasNextPage}
+            onClick={handleNextPage}
+            title="Ver meses más recientes"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
       
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={chartData}
+            data={visibleChartData}
             margin={{ top: 10, right: 10, left: 15, bottom: 0 }}
             barGap={2}
             barSize={25}
             onMouseMove={(data) => {
               if (data.activeTooltipIndex !== undefined) {
-                setActiveMonth(chartData[data.activeTooltipIndex]?.month || null);
+                setActiveMonth(visibleChartData[data.activeTooltipIndex]?.month || null);
               }
             }}
             onMouseLeave={() => setActiveMonth(null)}
@@ -184,7 +256,7 @@ const ExpenseChart = () => {
                 fill={colors[category] || defaultColor}
                 radius={[0, 0, 4, 4]}
               >
-                {chartData.map((entry, index) => (
+                {visibleChartData.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`}
                     fillOpacity={activeMonth === entry.month ? 1 : 0.8}
