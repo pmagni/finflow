@@ -9,11 +9,14 @@ export async function getExpensesByMonth() {
         *,
         category:categories(name, icon)
       `)
+      .eq('type', 'expense')
       .order('transaction_date', { ascending: false });
 
     if (error) throw error;
       
     const monthlyExpenses: Record<string, Record<string, number>> = {};
+    
+    console.log(`Procesando ${transactions?.length || 0} transacciones de tipo expense`);
     
     transactions?.forEach(transaction => {
       const dateToUse = transaction.transaction_date || transaction.created_at;
@@ -26,17 +29,16 @@ export async function getExpensesByMonth() {
         monthlyExpenses[key] = {};
       }
       
-      // Use category name from relationship if available
       const categoryName = transaction.category?.name || 'Uncategorized';
       
       if (!monthlyExpenses[key][categoryName]) {
         monthlyExpenses[key][categoryName] = 0;
       }
       
-      if (transaction.type === 'expense') {
-        monthlyExpenses[key][categoryName] += Number(transaction.amount || 0);
-      }
+      monthlyExpenses[key][categoryName] += Number(transaction.amount || 0);
     });
+    
+    console.log("Meses disponibles:", Object.keys(monthlyExpenses));
     
     return monthlyExpenses;
   } catch (error) {
@@ -152,7 +154,6 @@ export async function getExpensesByCategory() {
     
     transactions?.forEach(transaction => {
       if (transaction.type === 'expense') {
-        // Use category name from relationship if available
         const categoryName = transaction.category?.name || 'Uncategorized';
         
         if (!categories[categoryName]) {
