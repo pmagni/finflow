@@ -2,10 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { getExpensesByMonth } from '@/services/expenseService';
 import { formatCurrency } from '@/utils/formatters';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ArrowUpDown, PieChart } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ExpenseChart = () => {
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
@@ -15,8 +14,6 @@ const ExpenseChart = () => {
   const [allChartData, setAllChartData] = useState<any[]>([]);
   const [sliderValue, setSliderValue] = useState(0);
   const [monthsToShow, setMonthsToShow] = useState(3);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const [selectedMonthDetail, setSelectedMonthDetail] = useState<any>(null);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -105,12 +102,6 @@ const ExpenseChart = () => {
     updateVisibleData(allChartData, newIndex);
   };
   
-  // Abrir diálogo con detalles al hacer clic en una barra
-  const handleBarClick = (data: any, index: number) => {
-    setSelectedMonthDetail(visibleChartData[index]);
-    setIsDetailDialogOpen(true);
-  };
-  
   if (isLoading) {
     return (
       <div className="bg-finflow-card rounded-2xl p-5 mb-5 animate-fade-in">
@@ -183,7 +174,6 @@ const ExpenseChart = () => {
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-2 italic">Clic para ver más detalles</p>
         </div>
       );
     }
@@ -231,8 +221,6 @@ const ExpenseChart = () => {
               }
             }}
             onMouseLeave={() => setActiveMonth(null)}
-            onClick={handleBarClick}
-            className="cursor-pointer"
           >
             <XAxis
               dataKey="month"
@@ -294,51 +282,6 @@ const ExpenseChart = () => {
           ))}
         </div>
       </div>
-      
-      {/* Diálogo para mostrar detalles al hacer clic */}
-      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="bg-finflow-card border-gray-800 max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-finflow-mint" />
-              Detalle de gastos: {selectedMonthDetail?.month}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="mt-4 space-y-4">
-            <div className="p-3 bg-gray-800 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Total del mes:</span>
-                <span className="text-lg font-bold text-finflow-mint">
-                  {selectedMonthDetail && formatCurrency(selectedMonthDetail.total)}
-                </span>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              {selectedMonthDetail && Object.entries(selectedMonthDetail)
-                .filter(([key]) => key !== 'month' && key !== 'total' && key !== 'originalMonth')
-                .sort(([, valueA], [, valueB]) => (Number(valueB) - Number(valueA)))
-                .map(([category, amount]) => (
-                  <div key={category} className="flex items-center justify-between p-2 rounded bg-gray-800/50 hover:bg-gray-800 transition-colors">
-                    <div className="flex items-center">
-                      <div 
-                        className="w-3 h-3 rounded-full mr-2"
-                        style={{ backgroundColor: colors[category] || defaultColor }}
-                      />
-                      <span className="capitalize">{category}</span>
-                    </div>
-                    <span className="font-medium">{formatCurrency(amount as number)}</span>
-                  </div>
-                ))}
-            </div>
-            
-            <div className="text-xs text-gray-400 mt-2 text-center">
-              Los gastos están ordenados de mayor a menor
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
