@@ -58,21 +58,19 @@ const ExpenseChart = () => {
       
       // Crear un valor numérico para ordenar correctamente
       const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(engMonth);
-      const sortDate = new Date(parseInt(year), monthIndex, 1);
+      const sortOrder = parseInt(year) * 100 + monthIndex; // Formato YYYYMM para ordenar
       
       return {
         month: `${spanishMonth} ${year}`,
         originalMonth: month,
-        sortDate,
+        sortOrder,
         ...categories,
         total
       };
     });
     
-    // Ordenar por fecha usando el valor numérico del sortDate
-    chartData.sort((a, b) => {
-      return a.sortDate.getTime() - b.sortDate.getTime();
-    });
+    // Ordenar por fecha (enero a diciembre)
+    chartData.sort((a, b) => a.sortOrder - b.sortOrder);
     
     return chartData;
   };
@@ -115,7 +113,7 @@ const ExpenseChart = () => {
   const allCategories = Array.from(
     new Set(
       allChartData.flatMap(data => 
-        Object.keys(data).filter(key => key !== 'month' && key !== 'total' && key !== 'originalMonth' && key !== 'sortDate')
+        Object.keys(data).filter(key => key !== 'month' && key !== 'total' && key !== 'originalMonth' && key !== 'sortOrder')
       )
     )
   );
