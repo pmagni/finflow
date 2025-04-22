@@ -1,19 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getExpensesByMonth } from '@/services/expenseService';
 import { formatCurrency } from '@/utils/formatters';
-import { Slider } from '@/components/ui/slider';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ExpenseChart = () => {
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   const [monthlyExpenses, setMonthlyExpenses] = useState<Record<string, Record<string, number>>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [visibleChartData, setVisibleChartData] = useState<any[]>([]);
-  const [allChartData, setAllChartData] = useState<any[]>([]);
-  const [sliderValue, setSliderValue] = useState(0);
-  const [monthsToShow, setMonthsToShow] = useState(3);
+  const [chartData, setChartData] = useState<any[]>([]);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -32,16 +26,13 @@ const ExpenseChart = () => {
   
   useEffect(() => {
     if (Object.keys(monthlyExpenses).length > 0) {
-      const data = prepareChartData();
-      setAllChartData(data);
-      
-      // Inicializar los datos visibles con los últimos meses
-      updateVisibleData(data, Math.max(0, data.length - monthsToShow));
+      const processedData = prepareChartData();
+      setChartData(processedData);
     }
   }, [monthlyExpenses]);
   
   const prepareChartData = () => {
-    const chartData = Object.entries(monthlyExpenses).map(([month, categories]) => {
+    const data = Object.entries(monthlyExpenses).map(([month, categories]) => {
       const total = Object.values(categories).reduce((sum, amount) => {
         return sum + (amount as number);
       }, 0);
@@ -56,47 +47,23 @@ const ExpenseChart = () => {
       
       const spanishMonth = monthMap[engMonth] || engMonth;
       
-      // Crear un valor numérico para ordenar correctamente
+      // Valor numérico para ordenación
       const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(engMonth);
-      const sortOrder = parseInt(year) * 100 + monthIndex; // Formato YYYYMM para ordenar
+      const sortOrder = parseInt(year) * 100 + monthIndex;
       
       return {
         month: `${spanishMonth} ${year}`,
-        originalMonth: month,
         sortOrder,
         ...categories,
         total
       };
     });
     
-    // Ordenar por fecha (enero a diciembre)
-    chartData.sort((a, b) => a.sortOrder - b.sortOrder);
+    // Ordenar cronológicamente (enero a diciembre)
+    data.sort((a, b) => a.sortOrder - b.sortOrder);
     
-    return chartData;
-  };
-  
-  const updateVisibleData = (data: any[], startIndex: number) => {
-    const endIndex = Math.min(startIndex + monthsToShow, data.length);
-    const newStartIndex = Math.max(0, Math.min(startIndex, data.length - monthsToShow));
-    
-    setSliderValue(newStartIndex);
-    setVisibleChartData(data.slice(newStartIndex, endIndex));
-  };
-  
-  // Manejar cambios en el slider
-  const handleSliderChange = (value: number[]) => {
-    updateVisibleData(allChartData, value[0]);
-  };
-  
-  // Manejar navegación con botones
-  const handlePrevious = () => {
-    const newIndex = Math.max(0, sliderValue - 1);
-    updateVisibleData(allChartData, newIndex);
-  };
-  
-  const handleNext = () => {
-    const newIndex = Math.min(allChartData.length - monthsToShow, sliderValue + 1);
-    updateVisibleData(allChartData, newIndex);
+    // Mostrar solo los últimos 6 meses o todos si hay menos
+    return data.slice(-6);
   };
   
   if (isLoading) {
@@ -112,8 +79,8 @@ const ExpenseChart = () => {
   
   const allCategories = Array.from(
     new Set(
-      allChartData.flatMap(data => 
-        Object.keys(data).filter(key => key !== 'month' && key !== 'total' && key !== 'originalMonth' && key !== 'sortOrder')
+      chartData.flatMap(data => 
+        Object.keys(data).filter(key => key !== 'month' && key !== 'total' && key !== 'sortOrder')
       )
     )
   );
@@ -179,42 +146,18 @@ const ExpenseChart = () => {
   
   return (
     <div className="bg-finflow-card rounded-2xl p-5 mb-5 animate-fade-in">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold">Detalle Gastos Mensuales</h2>
-        
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="h-7 w-7" 
-            disabled={sliderValue <= 0}
-            onClick={handlePrevious}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="h-7 w-7"
-            disabled={sliderValue >= allChartData.length - monthsToShow}
-            onClick={handleNext}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <h2 className="text-lg font-bold mb-4">Detalle Gastos Mensuales</h2>
       
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={visibleChartData}
+            data={chartData}
             margin={{ top: 10, right: 10, left: 15, bottom: 0 }}
             barGap={2}
             barSize={25}
             onMouseMove={(data) => {
               if (data.activeTooltipIndex !== undefined) {
-                setActiveMonth(visibleChartData[data.activeTooltipIndex]?.month || null);
+                setActiveMonth(chartData[data.activeTooltipIndex]?.month || null);
               }
             }}
             onMouseLeave={() => setActiveMonth(null)}
@@ -241,7 +184,7 @@ const ExpenseChart = () => {
                 fill={colors[category] || defaultColor}
                 radius={[0, 0, 4, 4]}
               >
-                {visibleChartData.map((entry, index) => (
+                {chartData.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`}
                     fillOpacity={activeMonth === entry.month ? 1 : 0.8}
@@ -252,19 +195,6 @@ const ExpenseChart = () => {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      
-      {allChartData.length > monthsToShow && (
-        <div className="mt-4 px-4">
-          <Slider 
-            value={[sliderValue]} 
-            min={0} 
-            max={Math.max(0, allChartData.length - monthsToShow)}
-            step={1}
-            onValueChange={handleSliderChange}
-            className="mt-2"
-          />
-        </div>
-      )}
       
       <div className="flex justify-center mt-6">
         <div className="flex flex-wrap justify-center gap-3 max-w-xl">
