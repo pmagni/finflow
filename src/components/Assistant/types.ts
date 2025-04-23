@@ -86,9 +86,32 @@ export interface AssistantResponsePayload {
   emotion?: string;
   confidence?: number;
   breakdown?: {
-    understanding?: string;
-    analysis?: string;
-    recommendation?: string;
+    title: string;
+    total: number;
+    currency: string;
+    items: {
+      category: string;
+      amount: number;
+      percentage: number;
+      trend: string;
+      trendPercentage: number;
+    }[];
+    comparisonPeriod?: string;
+  };
+  chartData?: {
+    chartType: string;
+    title: string;
+    xAxis: {
+      label: string;
+      data: string[];
+    };
+    series: {
+      name: string;
+      data: number[];
+      color: string;
+    }[];
+    legendPosition: string;
+    dataLabels: boolean;
   };
   actions?: AssistantAction[];
   relatedQueries?: string[];

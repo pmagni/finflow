@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import {
   Dialog,
@@ -16,9 +15,10 @@ import { createCategory, updateCategory } from '@/services/categoryService';
 
 interface CategoryManagementDialogProps {
   trigger?: React.ReactNode;
+  onCategoryChange?: () => void;
 }
 
-export function CategoryManagementDialog({ trigger }: CategoryManagementDialogProps) {
+export function CategoryManagementDialog({ trigger, onCategoryChange }: CategoryManagementDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
@@ -32,6 +32,7 @@ export function CategoryManagementDialog({ trigger }: CategoryManagementDialogPr
       }
       setShowForm(false);
       setEditingCategory(null);
+      onCategoryChange?.();
     } catch (error) {
       console.error('Error managing category:', error);
     }

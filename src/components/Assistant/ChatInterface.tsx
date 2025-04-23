@@ -64,7 +64,7 @@ const ChatInterfaceDeprecated = () => {
         }
       });
       
-      const response = await fetch('https://pmagni.app.n8n.cloud/webhook-test/106ac574-b117-498c-bb7b-2f930489aea7', {
+      const response = await fetch('https://pmagni.app.n8n.cloud/webhook/106ac574-b117-498c-bb7b-2f930489aea7', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

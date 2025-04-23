@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
 import {
   FormField,
@@ -27,26 +27,30 @@ export function CategoryField() {
   
   const selectedType = watch('type');
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setIsLoading(true);
-        const fetchedCategories = await getCategories() as Category[];
-        setCategories(fetchedCategories);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCategories();
+  const fetchCategories = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const fetchedCategories = await getCategories() as Category[];
+      setCategories(fetchedCategories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   // Cuando cambia el tipo de transacción, resetear la categoría si no es compatible
   useEffect(() => {
-    setValue('category', ''); // Se establecerá como undefined en el formulario
+    setValue('category', '');
   }, [selectedType, setValue]);
+
+  const handleCategoryChange = useCallback(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const filteredCategories = categories.filter(
     category => category.transaction_type === selectedType
@@ -90,6 +94,7 @@ export function CategoryField() {
                   <Plus className="h-4 w-4" />
                 </Button>
               }
+              onCategoryChange={handleCategoryChange}
             />
           </div>
           <FormMessage />

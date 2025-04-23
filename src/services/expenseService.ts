@@ -4,7 +4,7 @@ import { Expense, FinancialHealthScore } from "../types";
 export async function getExpensesByMonth() {
   try {
     const { data: transactions, error } = await supabase
-    .from('transactions')
+      .from('transactions')
       .select(`
         *,
         category:categories(name, icon)
@@ -14,33 +14,44 @@ export async function getExpensesByMonth() {
 
     if (error) throw error;
 
-  const monthlyExpenses: Record<string, Record<string, number>> = {};
+    const monthlyExpenses: Record<string, Record<string, number>> = {};
     
-    console.log(`Procesando ${transactions?.length || 0} transacciones de tipo expense`);
-  
-  transactions?.forEach(transaction => {
+    transactions?.forEach(transaction => {
       const dateToUse = transaction.transaction_date || transaction.created_at;
       const date = new Date(dateToUse || '');
-    const month = date.toLocaleString('default', { month: 'short' });
-    const year = date.getFullYear();
-    const key = `${month} ${year}`;
-    
-    if (!monthlyExpenses[key]) {
-      monthlyExpenses[key] = {};
-    }
-    
-      const categoryName = transaction.category?.name || 'Uncategorized';
+      // Usar el formato es-CL para mantener consistencia con el resto de la app
+      const month = date.toLocaleString('es-CL', { month: 'long' });
+      const year = date.getFullYear();
+      const key = `${month} ${year}`;
+      
+      if (!monthlyExpenses[key]) {
+        monthlyExpenses[key] = {};
+      }
+      
+      const categoryName = transaction.category?.name || 'Sin categoría';
       
       if (!monthlyExpenses[key][categoryName]) {
         monthlyExpenses[key][categoryName] = 0;
-    }
-    
+      }
+      
       monthlyExpenses[key][categoryName] += Number(transaction.amount || 0);
     });
+
+    // Ordenar los meses de más reciente a más antiguo
+    const sortedMonthlyExpenses: Record<string, Record<string, number>> = {};
+    Object.keys(monthlyExpenses)
+      .sort((a, b) => {
+        const [monthA, yearA] = a.split(' ');
+        const [monthB, yearB] = b.split(' ');
+        const dateA = new Date(`${monthA} 1, ${yearA}`);
+        const dateB = new Date(`${monthB} 1, ${yearB}`);
+        return dateB.getTime() - dateA.getTime();
+      })
+      .forEach(key => {
+        sortedMonthlyExpenses[key] = monthlyExpenses[key];
+      });
     
-    console.log("Meses disponibles:", Object.keys(monthlyExpenses));
-  
-  return monthlyExpenses;
+    return sortedMonthlyExpenses;
   } catch (error) {
     console.error('Error fetching expenses by month:', error);
     return {};

@@ -1,4 +1,3 @@
-
 export interface Expense {
   date: string;
   category: string;
@@ -13,6 +12,7 @@ export interface DebtItem {
   balance: number;
   interestRate: number;
   minimumPayment: number;
+  totalPayments: number;
 }
 
 export interface Message {

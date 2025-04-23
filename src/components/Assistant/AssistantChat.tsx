@@ -34,7 +34,7 @@ import {
 import { Input } from '@/components/ui/input';
 
 // URL del webhook
-const WEBHOOK_URL = 'https://pmagni.app.n8n.cloud/webhook-test/106ac574-b117-498c-bb7b-2f930489aea7';
+const WEBHOOK_URL = 'https://pmagni.app.n8n.cloud/webhook/106ac574-b117-498c-bb7b-2f930489aea7';
 
 const AssistantChat = () => {
   const [input, setInput] = useState('');
@@ -157,7 +157,28 @@ const AssistantChat = () => {
     
     // Caso 2: Si message es un string
     if (data.message && typeof data.message === 'string') {
-      return data.message;
+      const baseMessage = data.message;
+      
+      // Si es tipo breakdown, agregar el desglose detallado
+      if (data.responseType === 'breakdown' && data.breakdown) {
+        const { breakdown } = data;
+        let response = `${baseMessage}\n\n`;
+        
+        // Agregar título y total
+        response += `📊 ${breakdown.title}\n`;
+        response += `💰 Total: ${breakdown.total}${breakdown.currency}\n\n`;
+        
+        // Agregar desglose por categoría
+        breakdown.items.forEach(item => {
+          const trendIcon = item.trend === 'up' ? '↗️' : 
+                          item.trend === 'down' ? '↘️' : '➡️';
+          response += `${trendIcon} ${item.category}: ${item.amount}${breakdown.currency} (${item.percentage.toFixed(1)}%)\n`;
+        });
+        
+        return response;
+      }
+      
+      return baseMessage;
     }
     
     // Caso 3: Si message es un objeto
@@ -229,20 +250,23 @@ const AssistantChat = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(payload),
-          // Agregar timeout
-          signal: AbortSignal.timeout(15000) // 15 segundos de timeout
+          // Aumentar el timeout a 30 segundos
+          signal: AbortSignal.timeout(30000) // 30 segundos de timeout
         });
       } catch (fetchError: any) {
         if (fetchError.name === 'AbortError') {
-          throw new Error('La solicitud tardó demasiado tiempo en responder');
+          console.error('Timeout error:', fetchError);
+          throw new Error('La conexión tardó demasiado tiempo. Por favor, verifica tu conexión a internet e intenta nuevamente.');
         }
-        throw new Error(`Error de red: ${fetchError.message}`);
+        console.error('Network error:', fetchError);
+        throw new Error(`Error de conexión: ${fetchError.message}`);
       }
 
-      // Verificar respuesta HTTP
+      // Verificar respuesta HTTP con más detalles
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`El servidor respondió con estado ${response.status}: ${errorText || 'Sin detalles'}`);
+        console.error('HTTP error:', response.status, errorText);
+        throw new Error(`Error del servidor (${response.status}): ${errorText || 'Sin detalles del error'}`);
       }
 
       // Verificar que la respuesta tenga contenido
@@ -297,28 +321,41 @@ const AssistantChat = () => {
     } catch (error: any) {
       console.error('Error enviando mensaje:', error);
       
+      // Determinar un mensaje de error más específico
+      let errorMessage = 'Lo siento, hubo un error al procesar tu solicitud.';
+      if (error.message.includes('tardó demasiado tiempo')) {
+        errorMessage = 'La conexión está tardando demasiado. Por favor, verifica tu conexión a internet e intenta nuevamente.';
+      } else if (error.message.includes('Error de conexión')) {
+        errorMessage = 'Hay problemas con la conexión al servidor. Por favor, verifica tu conexión a internet.';
+      } else if (error.message.includes('Error del servidor')) {
+        errorMessage = 'El servidor está experimentando problemas. Por favor, intenta nuevamente en unos momentos.';
+      }
+      
       // Guardar el error para mostrar detalles
       setErrorState(error.message || 'Error desconocido');
       
       // Mensaje de error en caso de fallo
-      const errorMessage: Message = {
+      const errorResponseMessage: Message = {
         id: Date.now().toString(),
-        text: 'Lo siento, hubo un error al procesar tu solicitud. Por favor, intenta de nuevo.',
+        text: errorMessage,
         sender: 'assistant',
         timestamp: new Date(),
       };
       
       // Actualizar la conversación con el mensaje de error
-      const updatedWithErrorMessage = [...updatedMessages, errorMessage];
+      const updatedWithErrorMessage = [...updatedMessages, errorResponseMessage];
       setCurrentConversation({
         ...currentConversation,
         messages: updatedWithErrorMessage
       });
 
       // Guardar en el servicio de historial
-      chatHistoryService.addMessageToConversation(currentConversation.id, errorMessage);
+      chatHistoryService.addMessageToConversation(currentConversation.id, errorResponseMessage);
       
-      toast.error("No se pudo obtener una respuesta del asistente");
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setIsLoading(false);
     }

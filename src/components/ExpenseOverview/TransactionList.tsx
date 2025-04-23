@@ -79,9 +79,9 @@ const TransactionList = () => {
   if (isLoading) {
     return (
       <div className="bg-finflow-card rounded-2xl p-5 animate-fade-in">
-        <h2 className="text-lg font-bold mb-4">Recent Transactions</h2>
+        <h2 className="text-lg font-bold mb-4">Últimas Transacciones</h2>
         <div className="flex items-center justify-center p-4">
-          <p>Loading...</p>
+          <p>Cargando...</p>
         </div>
       </div>
     );
@@ -129,12 +129,12 @@ const TransactionList = () => {
   
   return (
     <div className="bg-finflow-card rounded-2xl p-5 animate-fade-in">
-      <h2 className="text-lg font-bold mb-4">Recent Transactions</h2>
+      <h2 className="text-lg font-bold mb-4">Últimas Transacciones</h2>
       
       <div className="space-y-3">
         {transactions.length === 0 ? (
           <div className="text-center py-4 text-gray-400">
-            <p>No recent transactions</p>
+            <p>No hay transacciones recientes</p>
           </div>
         ) : (
           transactions.map((transaction) => (
@@ -164,7 +164,7 @@ const TransactionList = () => {
       </div>
       
       <Link to="/transactions" className="flex items-center justify-center w-full mt-4 text-finflow-mint text-sm hover:underline">
-        See all transactions
+        Ver todas las transacciones
         <ArrowRight className="ml-1" size={14} />
       </Link>
     </div>
