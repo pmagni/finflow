@@ -1,5 +1,6 @@
+
 import { render } from '@testing-library/react';
-import { ExpenseChart } from '@/components/ExpenseOverview/ExpenseChart';
+import ExpenseChart from '@/components/ExpenseOverview/ExpenseChart';
 import { transactionService } from '@/services/transactionService';
 import { getExpensesByMonth } from '@/services/expenseService';
 
@@ -52,4 +53,4 @@ describe('Pruebas de Rendimiento', () => {
       expect(processingTime).toBeLessThan(150);
     });
   });
-}); 
+});

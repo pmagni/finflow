@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { PieChart, Pie, ResponsiveContainer, Cell, Sector } from 'recharts';
 import { getExpensesByMonth } from '@/services/expenseService';
@@ -11,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from '@/integrations/supabase/client';
+import { ChartContainer } from '@/components/ui/chart';
 
 interface ChartDataPoint {
   name: string;
@@ -42,7 +44,7 @@ const ExpenseChart = () => {
   const [updateKey, setUpdateKey] = useState(0);
   const monthsPerPage = 1;
 
-  // Colores más atractivos para las categorías
+  // Enhanced color palette with better contrast and visual appeal
   const colors: { [key: string]: string } = {
     food: '#FF6B6B',
     transport: '#4ECDC4',
@@ -59,7 +61,11 @@ const ExpenseChart = () => {
     servicios: '#118AB2',
     regalos: '#EF476F',
     suscripciones: '#9381FF',
-    sueldo: '#3A86FF'
+    sueldo: '#3A86FF',
+    salary: '#3A86FF',
+    investment: '#06D6A0', 
+    freelance: '#FFD166',
+    others: '#9381FF'
   };
   
   const defaultColor = '#7EEBC6';
@@ -112,7 +118,7 @@ const ExpenseChart = () => {
         value: amount,
         percentage: percentage < 1 ? '<1' : percentage.toFixed(0)
       };
-    });
+    }).sort((a, b) => b.value - a.value); // Sort by value descending
   }, []);
 
   const monthsList = useMemo(() => Object.entries(monthlyExpenses), [monthlyExpenses, updateKey]);
@@ -150,9 +156,7 @@ const ExpenseChart = () => {
   // Encontrar la categoría con mayor porcentaje
   const mainCategory = useMemo(() => {
     if (!currentMonthData.data.length) return null;
-    return currentMonthData.data.reduce((max, current) => 
-      Number(current.percentage) > Number(max.percentage) ? current : max
-    , currentMonthData.data[0]);
+    return currentMonthData.data[0]; // Using sorted data
   }, [currentMonthData.data]);
 
   const CustomTooltip = ({ active, payload }: TooltipProps) => {
@@ -182,10 +186,13 @@ const ExpenseChart = () => {
           cx={cx}
           cy={cy}
           innerRadius={innerRadius}
-          outerRadius={outerRadius * 1.05} // 5% más grande cuando está activo
+          outerRadius={outerRadius * 1.08} // 8% más grande cuando está activo para mejor visibilidad
           startAngle={startAngle}
           endAngle={endAngle}
           fill={fill}
+          strokeWidth={2}
+          stroke="#1A1A1A"
+          className="filter drop-shadow-lg"
         />
       </g>
     );
@@ -203,7 +210,7 @@ const ExpenseChart = () => {
   }
   
   return (
-    <div className="bg-finflow-card rounded-2xl p-5 mb-5 animate-fade-in">
+    <div className="bg-finflow-card rounded-2xl p-5 mb-5 animate-fade-in shadow-lg border border-gray-800">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold">Mis Gastos</h2>
       </div>
@@ -213,7 +220,7 @@ const ExpenseChart = () => {
           <DropdownMenuTrigger asChild>
             <Button 
               variant="outline" 
-              className="min-w-40 flex items-center justify-between gap-2"
+              className="min-w-40 flex items-center justify-between gap-2 bg-gray-800 hover:bg-gray-700 border-gray-700"
             >
               <Calendar className="h-4 w-4" />
               <span className="flex-1">{currentMonthData.month || 'Seleccionar mes'}</span>
@@ -238,33 +245,38 @@ const ExpenseChart = () => {
         <div className="h-96 w-full relative">
           {currentMonthData.data.length > 0 ? (
             <>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={currentMonthData.data}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={94}
-                    outerRadius={140}
-                    paddingAngle={2}
-                    dataKey="value"
-                    labelLine={false}
-                    onClick={onPieClick}
-                    activeIndex={activeIndex}
-                    activeShape={renderActiveShape}
-                  >
-                    {currentMonthData.data.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={colors[entry.name.toLowerCase()] || defaultColor}
-                        className="cursor-pointer hover:opacity-90 transition-opacity"
-                      />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={currentMonthData.data}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={94}
+                      outerRadius={140}
+                      paddingAngle={2}
+                      dataKey="value"
+                      labelLine={false}
+                      onClick={onPieClick}
+                      activeIndex={activeIndex}
+                      activeShape={renderActiveShape}
+                      stroke="#1A1A1A"
+                      strokeWidth={1}
+                    >
+                      {currentMonthData.data.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={colors[entry.name.toLowerCase()] || defaultColor}
+                          className="cursor-pointer hover:opacity-90 transition-opacity filter drop-shadow-md"
+                          style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.3))' }}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
               <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                <div className="text-4xl font-bold">
+                <div className="text-4xl font-bold bg-gradient-to-r from-gray-100 to-gray-300 text-transparent bg-clip-text">
                   {activeIndex !== null 
                     ? `${currentMonthData.data[activeIndex].percentage}%`
                     : mainCategory?.percentage + '%'}
@@ -289,7 +301,6 @@ const ExpenseChart = () => {
         {currentMonthData.data.length > 0 && (
           <div className="w-full max-w-md grid grid-cols-2 gap-4 mt-6">
             {currentMonthData.data
-              .sort((a, b) => b.value - a.value)
               .map((category, index) => (
                 <div 
                   key={category.name} 
@@ -300,7 +311,10 @@ const ExpenseChart = () => {
                 >
                   <div
                     className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: colors[category.name.toLowerCase()] || defaultColor }}
+                    style={{ 
+                      backgroundColor: colors[category.name.toLowerCase()] || defaultColor,
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                    }}
                   />
                   <div className="flex items-baseline justify-between w-full">
                     <span className="text-sm capitalize truncate">{category.name}</span>
