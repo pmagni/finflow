@@ -1,4 +1,3 @@
-
 import { render } from '@testing-library/react';
 import ExpenseChart from '@/components/ExpenseOverview/ExpenseChart';
 import { transactionService } from '@/services/transactionService';
@@ -21,7 +20,6 @@ describe('Pruebas de Rendimiento', () => {
       const endTime = performance.now();
       const renderTime = endTime - startTime;
       
-      // El tiempo de renderizado debería ser menor a 100ms
       expect(renderTime).toBeLessThan(100);
     });
   });
@@ -35,7 +33,6 @@ describe('Pruebas de Rendimiento', () => {
       const endTime = performance.now();
       const processingTime = endTime - startTime;
       
-      // El tiempo de procesamiento debería ser menor a 200ms
       expect(processingTime).toBeLessThan(200);
     });
   });
@@ -49,9 +46,7 @@ describe('Pruebas de Rendimiento', () => {
       const endTime = performance.now();
       const processingTime = endTime - startTime;
       
-      // El tiempo de procesamiento debería ser menor a 150ms
       expect(processingTime).toBeLessThan(150);
     });
   });
 });
-
