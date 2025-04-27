@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   FormField,
@@ -39,6 +40,7 @@ export function AmountField() {
               <Input
                 type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Ingrese monto en pesos chilenos"
                 className="bg-gray-800 border-gray-700 pl-7"
                 value={formatNumber(field.value?.toString() || '')}
@@ -48,7 +50,6 @@ export function AmountField() {
                 }}
                 onBlur={(e) => {
                   field.onBlur();
-                  // Asegurarse de que el valor sea un número válido al perder el foco
                   const value = unformatNumber(e.target.value);
                   if (value && !isNaN(Number(value))) {
                     field.onChange(value);
