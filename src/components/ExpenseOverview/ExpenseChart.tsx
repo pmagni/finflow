@@ -65,6 +65,12 @@ const ExpenseChart = () => {
     salary: '#3A86FF',
     investment: '#06D6A0', 
     freelance: '#FFD166',
+    'tarjetas de crédito': '#FF6B6B',
+    créditos: '#4ECDC4',
+    salud: '#FFD166',
+    educación: '#06D6A0',
+    ropa: '#118AB2',
+    otros: '#9381FF',
     others: '#9381FF'
   };
   
@@ -140,6 +146,8 @@ const ExpenseChart = () => {
     if (pages === 0) {
       setCurrentPage(0);
     }
+    // Reset active index when data changes
+    setActiveIndex(null);
   }, [monthsList.length]);
 
   const handlePreviousPage = useCallback(() => {
@@ -153,9 +161,9 @@ const ExpenseChart = () => {
   const hasPreviousPage = useMemo(() => currentPage > 0, [currentPage]);
   const hasNextPage = useMemo(() => currentPage < totalPages - 1, [currentPage, totalPages]);
 
-  // Encontrar la categoría con mayor porcentaje
+  // Find category with the highest percentage
   const mainCategory = useMemo(() => {
-    if (!currentMonthData.data.length) return null;
+    if (!currentMonthData.data || currentMonthData.data.length === 0) return null;
     return currentMonthData.data[0]; // Using sorted data
   }, [currentMonthData.data]);
 
@@ -174,6 +182,7 @@ const ExpenseChart = () => {
   };
   
   const onPieClick = (data: any, index: number) => {
+    // If clicking on the already active slice, reset to default (mainCategory)
     setActiveIndex(activeIndex === index ? null : index);
   };
 
@@ -198,6 +207,29 @@ const ExpenseChart = () => {
     );
   };
   
+  // Get the current display percentage and category
+  const displayData = useMemo(() => {
+    if (activeIndex !== null && currentMonthData.data && currentMonthData.data[activeIndex]) {
+      // Show selected category
+      return {
+        percentage: currentMonthData.data[activeIndex].percentage || '0',
+        name: currentMonthData.data[activeIndex].name
+      };
+    } else if (mainCategory) {
+      // Show highest category by default
+      return {
+        percentage: mainCategory.percentage || '0',
+        name: mainCategory.name
+      };
+    } else {
+      // Fallback if no data
+      return {
+        percentage: '0',
+        name: 'Sin categoría'
+      };
+    }
+  }, [activeIndex, currentMonthData.data, mainCategory]);
+
   if (isLoading) {
     return (
       <div className="bg-finflow-card rounded-2xl p-5 mb-5 animate-fade-in">
@@ -227,11 +259,11 @@ const ExpenseChart = () => {
               <ChevronDown className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="w-40">
+          <DropdownMenuContent align="center" className="w-40 bg-gray-800 border-gray-700">
             {monthsList.map(([month], index) => (
               <DropdownMenuItem
                 key={month}
-                className="justify-center"
+                className="justify-center hover:bg-gray-700"
                 onClick={() => setCurrentPage(index)}
               >
                 {month}
@@ -268,7 +300,7 @@ const ExpenseChart = () => {
                           key={`cell-${index}`} 
                           fill={colors[entry.name.toLowerCase()] || defaultColor}
                           className="cursor-pointer hover:opacity-90 transition-opacity filter drop-shadow-md"
-                          style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.3))' }}
+                          style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.35))' }}
                         />
                       ))}
                     </Pie>
@@ -277,14 +309,10 @@ const ExpenseChart = () => {
               </div>
               <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
                 <div className="text-4xl font-bold bg-gradient-to-r from-gray-100 to-gray-300 text-transparent bg-clip-text">
-                  {activeIndex !== null 
-                    ? `${currentMonthData.data[activeIndex].percentage}%`
-                    : mainCategory?.percentage + '%'}
+                  {displayData.percentage}%
                 </div>
                 <div className="text-sm text-gray-400 capitalize">
-                  {activeIndex !== null 
-                    ? currentMonthData.data[activeIndex].name
-                    : mainCategory?.name}
+                  {displayData.name}
                 </div>
               </div>
             </>
@@ -313,7 +341,7 @@ const ExpenseChart = () => {
                     className="w-3 h-3 rounded-full flex-shrink-0"
                     style={{ 
                       backgroundColor: colors[category.name.toLowerCase()] || defaultColor,
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
                     }}
                   />
                   <div className="flex items-baseline justify-between w-full">
