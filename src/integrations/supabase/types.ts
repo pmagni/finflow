@@ -39,40 +39,158 @@ export type Database = {
         }
         Relationships: []
       }
+      debt_plans: {
+        Row: {
+          budget_percentage: number
+          created_at: string
+          id: string
+          is_active: boolean
+          monthly_budget: number
+          monthly_income: number
+          payment_strategy: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_percentage: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_budget: number
+          monthly_income: number
+          payment_strategy: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_percentage?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_budget?: number
+          monthly_income?: number
+          payment_strategy?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      debts: {
+        Row: {
+          balance: number
+          created_at: string
+          debt_plan_id: string
+          id: string
+          interest_rate: number
+          is_paid: boolean
+          minimum_payment: number
+          name: string
+          total_payments: number
+          updated_at: string
+        }
+        Insert: {
+          balance: number
+          created_at?: string
+          debt_plan_id: string
+          id?: string
+          interest_rate: number
+          is_paid?: boolean
+          minimum_payment: number
+          name: string
+          total_payments: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          debt_plan_id?: string
+          id?: string
+          interest_rate?: number
+          is_paid?: boolean
+          minimum_payment?: number
+          name?: string
+          total_payments?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debts_debt_plan_id_fkey"
+            columns: ["debt_plan_id"]
+            isOneToOne: false
+            referencedRelation: "debt_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_history: {
+        Row: {
+          amount: number
+          created_at: string
+          debt_id: string
+          id: string
+          payment_date: string
+          payment_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          debt_id: string
+          id?: string
+          payment_date?: string
+          payment_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          debt_id?: string
+          id?: string
+          payment_date?: string
+          payment_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_history_debt_id_fkey"
+            columns: ["debt_id"]
+            isOneToOne: false
+            referencedRelation: "debts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
-          category: string | null
           category_id: string | null
+          category_name: string | null
           created_at: string | null
-          transaction_date: string | null
           currency: string | null
           description: string
           id: string
+          transaction_date: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           user_id: string | null
         }
         Insert: {
           amount: number
-          category?: string | null
           category_id?: string | null
+          category_name?: string | null
           created_at?: string | null
-          transaction_date?: string | null
           currency?: string | null
           description: string
           id?: string
+          transaction_date?: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           user_id?: string | null
         }
         Update: {
           amount?: number
-          category?: string | null
           category_id?: string | null
+          category_name?: string | null
           created_at?: string | null
-          transaction_date?: string | null
           currency?: string | null
           description?: string
           id?: string
+          transaction_date?: string | null
           type?: Database["public"]["Enums"]["transaction_type"]
           user_id?: string | null
         }

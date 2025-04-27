@@ -1,10 +1,11 @@
+
 import * as z from "zod";
 
 export interface Category {
   id: string;
   name: string;
   icon: string;
-  transaction_type: 'income' | 'expense';
+  transaction_type: string;
   user_id?: string;
   created_at?: string;
   updated_at?: string;

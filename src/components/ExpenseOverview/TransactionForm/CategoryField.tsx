@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
 import {
@@ -30,8 +31,8 @@ export function CategoryField() {
   const fetchCategories = useCallback(async () => {
     try {
       setIsLoading(true);
-      const fetchedCategories = await getCategories() as Category[];
-      setCategories(fetchedCategories);
+      const fetchedCategories = await getCategories();
+      setCategories(fetchedCategories as Category[]);
     } catch (error) {
       console.error('Error fetching categories:', error);
     } finally {
