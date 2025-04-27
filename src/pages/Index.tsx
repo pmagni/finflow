@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import FinancialHealth from '@/components/ExpenseOverview/FinancialHealth';
 import ExpenseChart from '@/components/ExpenseOverview/ExpenseChart';
@@ -55,7 +56,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-finflow-dark text-white pb-20">
-      <div className="container max-w-md mx-auto p-4">
+      <div className="container max-w-md mx-auto p-4 space-y-6"> {/* Added space-y-6 for consistent vertical spacing */}
         <header className="flex justify-between items-center py-4">
           <h1 className="text-2xl font-bold">FinFlow</h1>
           <div className="flex items-center gap-4">
@@ -71,7 +72,7 @@ const Index = () => {
           </div>
         </header>
         
-        <div className="mb-8">
+        <div className="mb-6"> {/* Adjusted margin for consistency */}
           <h2 className="text-gray-400 text-sm">Balance del Mes</h2>
           <h1 className="text-4xl font-bold">{formatCurrency(balance)}</h1>
         </div>
