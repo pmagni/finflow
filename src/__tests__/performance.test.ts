@@ -1,7 +1,9 @@
 
-import { expect, test } from 'vitest';
+// This file is manually testing performance without using an actual test framework
+// This avoids the dependency on vitest
 
-test('Basic arithmetic operations performance', () => {
+// Simple performance test for basic operations
+const performanceTest = () => {
   const iterations = 10000;
   
   // Addition
@@ -23,6 +25,8 @@ test('Basic arithmetic operations performance', () => {
   console.log(`Addition: ${endAddition - startAddition}ms`);
   console.log(`Multiplication: ${endMultiplication - startMultiplication}ms`);
   
-  // Just a simple assertion to ensure the test passes
-  expect(true).toBe(true);
-});
+  return true;
+};
+
+// Run the performance test
+performanceTest();
