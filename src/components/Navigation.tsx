@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { HomeIcon, BanknoteIcon, BrainCircuitIcon } from 'lucide-react';
@@ -7,17 +8,17 @@ const Navigation = () => {
   
   const menuItems = [
     { 
-      label: 'Dashboard', 
+      label: 'Home', 
       path: '/', 
       icon: <HomeIcon size={22} strokeWidth={1.5} /> 
     },
     { 
-      label: 'My Debts', 
+      label: 'Mis Deudas', 
       path: '/debt', 
       icon: <BanknoteIcon size={22} strokeWidth={1.5} /> 
     },
     { 
-      label: 'Financial AI', 
+      label: 'Asistente Fin', 
       path: '/assistant', 
       icon: <BrainCircuitIcon size={22} strokeWidth={1.5} /> 
     },
