@@ -217,6 +217,288 @@ const DebtCalculator = () => {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
+  // Separate useEffect for initial data loading
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+      setLoadingUser(false);
+    };
+    getUser();
+  }, []);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!loadingUser && !user) {
+      navigate('/dashboard');
+    }
+  }, [loadingUser, user, navigate]);
+
+  // Load debt plan and debts
+  useEffect(() => {
+    if (user) {
+      loadUserDebts();
+    }
+  }, [user]);
+
+  // Function to load user debts from database
+  const loadUserDebts = async () => {
+    try {
+      const { data: debtPlans, error: debtPlanError } = await supabase
+        .from('debt_plans')
+        .select('*')
+        .eq('is_active', true)
+        .eq('user_id', user.id)
+        .limit(1);
+      
+      console.log('[loadDebts] Planes recibidos:', debtPlans);
+      
+      if (debtPlanError) {
+        console.error('[loadDebts] Error al cargar el plan de deudas:', debtPlanError);
+        return;
+      }
+
+      const debtPlan = debtPlans && debtPlans.length > 0 ? debtPlans[0] : null;
+
+      if (debtPlan) {
+        setDebtPlanId(debtPlan.id);
+        setMonthlyIncome(debtPlan.monthly_income);
+        setMonthlyBudget(debtPlan.monthly_budget);
+        setBudgetPercentage(debtPlan.budget_percentage);
+        setSelectedStrategy(debtPlan.payment_strategy as PaymentStrategy);
+
+        // Cargar las deudas asociadas al plan
+        const { data: debtsData, error: debtsError } = await supabase
+          .from('debts')
+          .select('*')
+          .eq('debt_plan_id', debtPlan.id);
+        
+        console.log('[loadDebts] Deudas recibidas:', debtsData);
+        
+        if (debtsError) {
+          console.error('[loadDebts] Error al cargar las deudas:', debtsError);
+          return;
+        }
+
+        if (debtsData) {
+          setDebts(debtsData.map(debt => ({
+            id: debt.id,
+            name: debt.name,
+            balance: debt.balance,
+            interestRate: debt.interest_rate,
+            minimumPayment: debt.minimum_payment,
+            totalPayments: debt.total_payments
+          })));
+          
+          // If there are debts, show the plan automatically
+          if (debtsData.length > 0) {
+            setShowPlan(true);
+          }
+        }
+      } else {
+        setDebts([]);
+        setDebtPlanId(null);
+        setShowPlan(false);
+      }
+    } catch (error) {
+      console.error('[loadDebts] Error al cargar los datos:', error);
+      toast.error('Error al cargar los datos de deudas');
+    }
+  };
+
+  // Guardar o actualizar plan de deudas
+  const saveDebtPlan = async (showToast = true) => {
+    try {
+      if (!user?.id) {
+        toast.error('Debes iniciar sesión para guardar tu plan de deudas');
+        return;
+      }
+
+      const debtPlanData = {
+        monthly_income: Math.round(monthlyIncome),
+        monthly_budget: Math.round(monthlyBudget),
+        budget_percentage: Math.round(budgetPercentage),
+        payment_strategy: selectedStrategy,
+        is_active: true,
+        user_id: user.id
+      };
+      
+      console.log('[saveDebtPlan] Enviando datos a Supabase:', debtPlanData);
+      
+      let newPlanId = debtPlanId;
+      if (debtPlanId) {
+        const { error } = await supabase
+          .from('debt_plans')
+          .update(debtPlanData)
+          .eq('id', debtPlanId);
+          
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('debt_plans')
+          .insert([debtPlanData])
+          .select()
+          .single();
+          
+        if (error) throw error;
+        newPlanId = data.id;
+        setDebtPlanId(data.id);
+      }
+      
+      if (showToast) toast.success('Plan de deudas guardado correctamente');
+      return newPlanId;
+    } catch (error) {
+      console.error('[saveDebtPlan] Error al guardar el plan de deudas:', error);
+      if (showToast) toast.error('Error al guardar el plan de deudas');
+      return null;
+    }
+  };
+
+  // Agregar una nueva deuda
+  const addDebt = () => {
+    const newDebtItem: DebtItem = {
+      id: `temp_${Date.now()}`,
+      name: '',
+      balance: 0,
+      interestRate: 0,
+      minimumPayment: 0,
+      totalPayments: 0
+    };
+    setDebts([...debts, newDebtItem]);
+  };
+  
+  // Eliminar una deuda
+  const removeDebt = async (id: string) => {
+    // For existing debts in database
+    if (!id.startsWith('temp_')) {
+      try {
+        const { error } = await supabase
+          .from('debts')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+        toast.success('Deuda eliminada correctamente');
+      } catch (error) {
+        console.error('[removeDebt] Error al eliminar la deuda:', error);
+        toast.error('Error al eliminar la deuda');
+      }
+    }
+    
+    // Remove from state
+    setDebts(debts.filter(debt => debt.id !== id));
+  };
+  
+  // Actualizar datos de una deuda
+  const updateDebt = (id: string, field: keyof DebtItem, value: string | number) => {
+    const updatedDebts = debts.map(debt => {
+      if (debt.id === id) {
+        return { ...debt, [field]: typeof value === 'string' ? value : Number(value) };
+      }
+      return debt;
+    });
+    setDebts(updatedDebts);
+  };
+
+  // Save debt to database
+  const saveDebt = async (debt: DebtItem) => {
+    if (!isDebtValid(debt)) {
+      return false;
+    }
+
+    if (!debtPlanId) {
+      const newPlanId = await saveDebtPlan(false);
+      if (!newPlanId) {
+        toast.error('Error al guardar el plan de deudas');
+        return false;
+      }
+    }
+    
+    try {
+      // Get plan ID either from state or from newly created plan
+      const planId = debtPlanId;
+      
+      if (!planId) {
+        toast.error('No se pudo obtener el ID del plan de deudas');
+        return false;
+      }
+      
+      const debtData = {
+        name: debt.name,
+        balance: Math.round(debt.balance),
+        interest_rate: Math.round(debt.interestRate * 100) / 100,
+        minimum_payment: Math.round(debt.minimumPayment),
+        total_payments: Math.round(debt.totalPayments),
+        debt_plan_id: planId,
+        is_paid: false
+      };
+      
+      console.log('[saveDebt] Enviando datos a Supabase:', debtData);
+      
+      // For new debts with temporary IDs
+      if (debt.id.startsWith('temp_')) {
+        const { data, error } = await supabase
+          .from('debts')
+          .insert([debtData])
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        // Replace temp ID with real DB ID in state
+        setDebts(prev => prev.map(d => 
+          d.id === debt.id ? { ...d, id: data.id } : d
+        ));
+      } else {
+        // For updating existing debts
+        const { error } = await supabase
+          .from('debts')
+          .update(debtData)
+          .eq('id', debt.id);
+          
+        if (error) throw error;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('[saveDebt] Error al guardar la deuda:', error);
+      return false;
+    }
+  };
+
+  // Save all debts and continue
+  const saveAllDebtsAndContinue = async () => {
+    if (debts.length === 0) {
+      nextStep();
+      return;
+    }
+    
+    // Create or update debt plan first
+    const planId = await saveDebtPlan(false);
+    if (!planId) {
+      toast.error('Error al guardar el plan de deudas');
+      return;
+    }
+    
+    let success = true;
+    
+    // Save each debt that needs saving (temporary IDs)
+    for (const debt of debts) {
+      if (debt.id.startsWith('temp_') && isDebtValid(debt)) {
+        const result = await saveDebt(debt);
+        if (!result) {
+          success = false;
+        }
+      }
+    }
+    
+    if (success) {
+      toast.success('Deudas guardadas correctamente');
+      nextStep();
+    } else {
+      toast.error('Hubo un problema al guardar algunas deudas');
+    }
+  };
+
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
@@ -227,6 +509,17 @@ const DebtCalculator = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  // Validate debt before saving
+  const isDebtValid = (debt: DebtItem) => {
+    return (
+      debt.name.trim() !== '' &&
+      debt.balance > 0 &&
+      debt.interestRate > 0 &&
+      debt.minimumPayment > 0 &&
+      debt.totalPayments > 0
+    );
   };
 
   const renderStep = () => {
@@ -365,230 +658,22 @@ const DebtCalculator = () => {
     }
   };
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-      setLoadingUser(false);
-    };
-    getUser();
-  }, []);
-
-  useEffect(() => {
-    if (!loadingUser && !user) {
-      navigate('/dashboard');
-    }
-  }, [loadingUser, user, navigate]);
-
-  useEffect(() => {
-    if (user) {
-      const loadDebts = async () => {
-        try {
-          const { data: debtPlans, error: debtPlanError } = await supabase
-            .from('debt_plans')
-            .select('*')
-            .eq('is_active', true)
-            .eq('user_id', user.id)
-            .limit(1);
-          console.log('[loadDebts] Planes recibidos:', debtPlans);
-          if (debtPlanError) {
-            console.error('[loadDebts] Error al cargar el plan de deudas:', debtPlanError);
-            return;
-          }
-
-          const debtPlan = debtPlans && debtPlans.length > 0 ? debtPlans[0] : null;
-
-          if (debtPlan) {
-            setDebtPlanId(debtPlan.id);
-            setMonthlyIncome(debtPlan.monthly_income);
-            setMonthlyBudget(debtPlan.monthly_budget);
-            setBudgetPercentage(debtPlan.budget_percentage);
-            setSelectedStrategy(debtPlan.payment_strategy as PaymentStrategy);
-
-            // Cargar las deudas asociadas al plan
-            const { data: debtsData, error: debtsError } = await supabase
-              .from('debts')
-              .select('*')
-              .eq('debt_plan_id', debtPlan.id);
-            console.log('[loadDebts] Deudas recibidas:', debtsData);
-            if (debtsError) {
-              console.error('[loadDebts] Error al cargar las deudas:', debtsError);
-              return;
-            }
-
-            if (debtsData) {
-              setDebts(debtsData.map(debt => ({
-                id: debt.id,
-                name: debt.name,
-                balance: debt.balance,
-                interestRate: debt.interest_rate,
-                minimumPayment: debt.minimum_payment,
-                totalPayments: debt.total_payments
-              })));
-              // Si hay deudas, mostrar el plan automáticamente
-              if (debtsData.length > 0) {
-                setShowPlan(true);
-              }
-            }
-          } else {
-            setDebts([]);
-            setDebtPlanId(null);
-            setShowPlan(false);
-          }
-        } catch (error) {
-          console.error('[loadDebts] Error al cargar los datos:', error);
-          toast.error('Error al cargar los datos de deudas');
-        }
-      };
-      loadDebts();
-    }
-  }, [user]);
-
-  // Guardar cambios en el plan de deudas
-  const saveDebtPlan = async (showToast = true) => {
-    try {
-      if (!user?.id) {
-        toast.error('Debes iniciar sesión para guardar tu plan de deudas');
-        return;
-      }
-
-      const debtPlanData = {
-        monthly_income: Math.round(monthlyIncome),
-        monthly_budget: Math.round(monthlyBudget),
-        budget_percentage: Math.round(budgetPercentage),
-        payment_strategy: selectedStrategy,
-        is_active: true,
-        user_id: user.id
-      };
-      console.log('[saveDebtPlan] Enviando datos a Supabase:', debtPlanData);
-      if (debtPlanId) {
-        const { error } = await supabase
-          .from('debt_plans')
-          .update(debtPlanData)
-          .eq('id', debtPlanId);
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from('debt_plans')
-          .insert([debtPlanData])
-          .select()
-          .single();
-        if (error) throw error;
-        setDebtPlanId(data.id);
-      }
-      if (showToast) toast.success('Plan de deudas guardado correctamente');
-    } catch (error) {
-      console.error('[saveDebtPlan] Error al guardar el plan de deudas:', error);
-      if (showToast) toast.error('Error al guardar el plan de deudas');
-    }
-  };
-
-  // Validar deuda antes de guardar
-  const isDebtValid = (debt: DebtItem) => {
-    return (
-      debt.name.trim() !== '' &&
-      debt.balance > 0 &&
-      debt.interestRate > 0 &&
-      debt.minimumPayment > 0 &&
-      debt.totalPayments > 0
-    );
-  };
-
-  // Guardar una deuda (solo cuando el usuario hace clic en 'Agregar')
-  const handleAddDebt = async () => {
-    if (!isDebtValid(newDebt)) {
-      toast.error('Por favor completa todos los campos con valores válidos.');
-      return;
-    }
-    setAdding(true);
-    try {
-      const debtData = {
-        name: newDebt.name,
-        balance: Math.round(newDebt.balance),
-        interest_rate: Math.round(newDebt.interestRate * 100) / 100,
-        minimum_payment: Math.round(newDebt.minimumPayment),
-        total_payments: Math.round(newDebt.totalPayments),
-        debt_plan_id: debtPlanId,
-        is_paid: false
-      };
-      console.log('[handleAddDebt] Enviando datos a Supabase:', debtData);
-      const { data, error } = await supabase
-        .from('debts')
-        .insert([debtData])
-        .select()
-        .single();
-      if (error) throw error;
-      setDebts([...debts, {
-        id: data.id,
-        name: data.name,
-        balance: data.balance,
-        interestRate: data.interest_rate,
-        minimumPayment: data.minimum_payment,
-        totalPayments: data.total_payments
-      }]);
-      setNewDebt({ id: '', name: '', balance: 0, interestRate: 0, minimumPayment: 0, totalPayments: 0 });
-      await saveDebtPlan(false);
-      toast.success('Deuda agregada correctamente');
-    } catch (error) {
-      console.error('[handleAddDebt] Error al agregar la deuda:', error);
-      toast.error('Error al agregar la deuda');
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  // Eliminar una deuda
-  const deleteDebt = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('debts')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-      setDebts(debts.filter(debt => debt.id !== id));
-      await saveDebtPlan(false);
-      toast.success('Deuda eliminada correctamente');
-    } catch (error) {
-      console.error('[deleteDebt] Error al eliminar la deuda:', error);
-      toast.error('Error al eliminar la deuda');
-    }
-  };
-
-  const addDebt = () => {
-    const newDebt: DebtItem = {
-      id: `temp_${Date.now()}`,
-      name: '',
-      balance: 0,
-      interestRate: 0,
-      minimumPayment: 0,
-      totalPayments: 0
-    };
-    setDebts([...debts, newDebt]);
-  };
-  
-  const removeDebt = async (id: string) => {
-    if (!id.startsWith('temp_')) {
-      await deleteDebt(id);
-    }
-    setDebts(debts.filter(debt => debt.id !== id));
-  };
-  
-  const updateDebt = async (id: string, field: keyof DebtItem, value: string | number) => {
-    const updatedDebts = debts.map(debt => {
-      if (debt.id === id) {
-        return { ...debt, [field]: typeof value === 'string' ? value : Number(value) };
-      }
-      return debt;
-    });
-    setDebts(updatedDebts);
-  };
-
-  // Guardar cambios cuando se modifica el ingreso mensual o el porcentaje
+  // Calculate budget when income or percentage changes
   useEffect(() => {
     const calculatedBudget = (monthlyIncome * budgetPercentage) / 100;
     setMonthlyBudget(calculatedBudget);
   }, [monthlyIncome, budgetPercentage]);
   
+  // Update debt plan in database when budget changes
+  useEffect(() => {
+    if (debtPlanId && user) {
+      const debounceTimer = setTimeout(() => {
+        saveDebtPlan(false);
+      }, 1000);
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [monthlyIncome, budgetPercentage, selectedStrategy]);
+
   // Calcular plan de pagos según la estrategia seleccionada
   useEffect(() => {
     if (debts.length === 0) {
@@ -708,10 +793,10 @@ const DebtCalculator = () => {
             </Button>
             <Button
               className="bg-finflow-mint text-black font-bold hover:bg-finflow-mint/90"
-              onClick={nextStep}
+              onClick={currentStep === 1 ? saveAllDebtsAndContinue : nextStep}
               disabled={currentStep === 4}
             >
-              Siguiente
+              {currentStep === 1 ? 'Guardar y Continuar' : 'Siguiente'}
             </Button>
           </div>
         </>
