@@ -6,6 +6,9 @@ import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { DebtItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 type PaymentStrategy = 'snowball' | 'avalanche' | 'proportional';
 
@@ -186,19 +189,10 @@ const MonthlyPlanDetail: React.FC<{
 };
 
 const DebtCalculator = () => {
-  const [debts, setDebts] = useState<DebtItem[]>([
-    { 
-      id: '1', 
-      name: 'Tarjeta de Crédito', 
-      balance: 5000, 
-      interestRate: 18.99, 
-      minimumPayment: 150,
-      totalPayments: 24
-    }
-  ]);
-  
-  const [monthlyIncome, setMonthlyIncome] = useState<number>(2000);
-  const [monthlyBudget, setMonthlyBudget] = useState<number>(600);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [debts, setDebts] = useState<DebtItem[]>([]);
+  const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
+  const [monthlyBudget, setMonthlyBudget] = useState<number>(0);
   const [budgetPercentage, setBudgetPercentage] = useState<number>(30);
   const [selectedStrategy, setSelectedStrategy] = useState<PaymentStrategy>('snowball');
   const [paymentPlan, setPaymentPlan] = useState<PaymentPlanDetail>({ 
@@ -208,7 +202,388 @@ const DebtCalculator = () => {
     monthlyPlans: []
   });
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
+  const [debtPlanId, setDebtPlanId] = useState<string | null>(null);
+  const [showPlan, setShowPlan] = useState(false);
+  const [newDebt, setNewDebt] = useState<DebtItem>({
+    id: '',
+    name: '',
+    balance: 0,
+    interestRate: 0,
+    minimumPayment: 0,
+    totalPayments: 0
+  });
+  const [adding, setAdding] = useState(false);
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
+  const nextStep = () => {
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="bg-finflow-card rounded-2xl p-5">
+            <h2 className="text-lg font-bold mb-4">1. Ingresa tus Deudas</h2>
+            <div className="space-y-4">
+              {debts.map((debt) => (
+                <div key={debt.id} className="bg-gray-900 rounded-xl p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <Input
+                      value={debt.name}
+                      onChange={e => updateDebt(debt.id, 'name', e.target.value)}
+                      className="bg-gray-800 border-none text-white max-w-[200px]"
+                      placeholder="Nombre de la deuda"
+                    />
+                    <button 
+                      onClick={() => removeDebt(debt.id)}
+                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="mb-1 block text-xs">Saldo</Label>
+                      <CurrencyInput
+                        value={debt.balance}
+                        onChange={(value) => updateDebt(debt.id, 'balance', value)}
+                        className="bg-gray-800 border-none text-white"
+                        min={0}
+                        placeholder="$0"
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-1 block text-xs">Tasa de Interés (%)</Label>
+                      <Input
+                        type="number"
+                        value={debt.interestRate}
+                        onChange={e => updateDebt(debt.id, 'interestRate', Number(e.target.value))}
+                        className="bg-gray-800 border-none text-white"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-1 block text-xs">Cuota Mensual</Label>
+                      <CurrencyInput
+                        value={debt.minimumPayment}
+                        onChange={(value) => updateDebt(debt.id, 'minimumPayment', value)}
+                        className="bg-gray-800 border-none text-white"
+                        min={0}
+                        placeholder="$0"
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-1 block text-xs">Cuotas Totales</Label>
+                      <Input
+                        type="number"
+                        value={debt.totalPayments}
+                        onChange={e => updateDebt(debt.id, 'totalPayments', Number(e.target.value))}
+                        className="bg-gray-800 border-none text-white"
+                        min={1}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <Button
+                className="w-full bg-gray-800 text-white hover:bg-gray-700"
+                onClick={addDebt}
+              >
+                <Plus size={16} className="mr-2" />
+                Agregar Deuda
+              </Button>
+            </div>
+          </div>
+        );
+      case 2:
+        return (
+          <div className="bg-finflow-card rounded-2xl p-5">
+            <h2 className="text-lg font-bold mb-4">2. Ingresa tu Ingreso Mensual</h2>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+              <CurrencyInput
+                value={monthlyIncome}
+                onChange={value => setMonthlyIncome(value)}
+                className="bg-gray-900 border-gray-800 text-white pl-7"
+                min={0}
+                placeholder="Ingreso mensual"
+              />
+            </div>
+          </div>
+        );
+      case 3:
+        return (
+          <div className="bg-finflow-card rounded-2xl p-5">
+            <h2 className="text-lg font-bold mb-4">3. Selecciona tu Estrategia</h2>
+            <Select value={selectedStrategy} onValueChange={(value: PaymentStrategy) => setSelectedStrategy(value)}>
+              <SelectTrigger className="bg-gray-900 border-gray-800">
+                <SelectValue placeholder="Selecciona una estrategia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="snowball">Bola de Nieve</SelectItem>
+                <SelectItem value="avalanche">Avalancha</SelectItem>
+                <SelectItem value="proportional">Proporcional</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="mt-4 bg-gray-900 rounded-xl p-4">
+              <p className="text-sm text-gray-400">
+                {STRATEGY_DESCRIPTIONS[selectedStrategy]}
+              </p>
+            </div>
+          </div>
+        );
+      case 4:
+        return (
+          <div className="bg-finflow-card rounded-2xl p-5">
+            <h2 className="text-lg font-bold mb-4">4. Genera tu Plan de Pagos</h2>
+            <Button
+              className="w-full bg-finflow-mint text-black font-bold hover:bg-finflow-mint/90"
+              onClick={async () => {
+                await saveDebtPlan();
+                setShowPlan(true);
+              }}
+            >
+              Generar Mi Plan de Pagos
+            </Button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+      setLoadingUser(false);
+    };
+    getUser();
+  }, []);
+
+  useEffect(() => {
+    if (!loadingUser && !user) {
+      navigate('/dashboard');
+    }
+  }, [loadingUser, user, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      const loadDebts = async () => {
+        try {
+          const { data: debtPlans, error: debtPlanError } = await supabase
+            .from('debt_plans')
+            .select('*')
+            .eq('is_active', true)
+            .eq('user_id', user.id)
+            .limit(1);
+          console.log('[loadDebts] Planes recibidos:', debtPlans);
+          if (debtPlanError) {
+            console.error('[loadDebts] Error al cargar el plan de deudas:', debtPlanError);
+            return;
+          }
+
+          const debtPlan = debtPlans && debtPlans.length > 0 ? debtPlans[0] : null;
+
+          if (debtPlan) {
+            setDebtPlanId(debtPlan.id);
+            setMonthlyIncome(debtPlan.monthly_income);
+            setMonthlyBudget(debtPlan.monthly_budget);
+            setBudgetPercentage(debtPlan.budget_percentage);
+            setSelectedStrategy(debtPlan.payment_strategy as PaymentStrategy);
+
+            // Cargar las deudas asociadas al plan
+            const { data: debtsData, error: debtsError } = await supabase
+              .from('debts')
+              .select('*')
+              .eq('debt_plan_id', debtPlan.id);
+            console.log('[loadDebts] Deudas recibidas:', debtsData);
+            if (debtsError) {
+              console.error('[loadDebts] Error al cargar las deudas:', debtsError);
+              return;
+            }
+
+            if (debtsData) {
+              setDebts(debtsData.map(debt => ({
+                id: debt.id,
+                name: debt.name,
+                balance: debt.balance,
+                interestRate: debt.interest_rate,
+                minimumPayment: debt.minimum_payment,
+                totalPayments: debt.total_payments
+              })));
+              // Si hay deudas, mostrar el plan automáticamente
+              if (debtsData.length > 0) {
+                setShowPlan(true);
+              }
+            }
+          } else {
+            setDebts([]);
+            setDebtPlanId(null);
+            setShowPlan(false);
+          }
+        } catch (error) {
+          console.error('[loadDebts] Error al cargar los datos:', error);
+          toast.error('Error al cargar los datos de deudas');
+        }
+      };
+      loadDebts();
+    }
+  }, [user]);
+
+  // Guardar cambios en el plan de deudas
+  const saveDebtPlan = async (showToast = true) => {
+    try {
+      if (!user?.id) {
+        toast.error('Debes iniciar sesión para guardar tu plan de deudas');
+        return;
+      }
+
+      const debtPlanData = {
+        monthly_income: Math.round(monthlyIncome),
+        monthly_budget: Math.round(monthlyBudget),
+        budget_percentage: Math.round(budgetPercentage),
+        payment_strategy: selectedStrategy,
+        is_active: true,
+        user_id: user.id
+      };
+      console.log('[saveDebtPlan] Enviando datos a Supabase:', debtPlanData);
+      if (debtPlanId) {
+        const { error } = await supabase
+          .from('debt_plans')
+          .update(debtPlanData)
+          .eq('id', debtPlanId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('debt_plans')
+          .insert([debtPlanData])
+          .select()
+          .single();
+        if (error) throw error;
+        setDebtPlanId(data.id);
+      }
+      if (showToast) toast.success('Plan de deudas guardado correctamente');
+    } catch (error) {
+      console.error('[saveDebtPlan] Error al guardar el plan de deudas:', error);
+      if (showToast) toast.error('Error al guardar el plan de deudas');
+    }
+  };
+
+  // Validar deuda antes de guardar
+  const isDebtValid = (debt: DebtItem) => {
+    return (
+      debt.name.trim() !== '' &&
+      debt.balance > 0 &&
+      debt.interestRate > 0 &&
+      debt.minimumPayment > 0 &&
+      debt.totalPayments > 0
+    );
+  };
+
+  // Guardar una deuda (solo cuando el usuario hace clic en 'Agregar')
+  const handleAddDebt = async () => {
+    if (!isDebtValid(newDebt)) {
+      toast.error('Por favor completa todos los campos con valores válidos.');
+      return;
+    }
+    setAdding(true);
+    try {
+      const debtData = {
+        name: newDebt.name,
+        balance: Math.round(newDebt.balance),
+        interest_rate: Math.round(newDebt.interestRate * 100) / 100,
+        minimum_payment: Math.round(newDebt.minimumPayment),
+        total_payments: Math.round(newDebt.totalPayments),
+        debt_plan_id: debtPlanId,
+        is_paid: false
+      };
+      console.log('[handleAddDebt] Enviando datos a Supabase:', debtData);
+      const { data, error } = await supabase
+        .from('debts')
+        .insert([debtData])
+        .select()
+        .single();
+      if (error) throw error;
+      setDebts([...debts, {
+        id: data.id,
+        name: data.name,
+        balance: data.balance,
+        interestRate: data.interest_rate,
+        minimumPayment: data.minimum_payment,
+        totalPayments: data.total_payments
+      }]);
+      setNewDebt({ id: '', name: '', balance: 0, interestRate: 0, minimumPayment: 0, totalPayments: 0 });
+      await saveDebtPlan(false);
+      toast.success('Deuda agregada correctamente');
+    } catch (error) {
+      console.error('[handleAddDebt] Error al agregar la deuda:', error);
+      toast.error('Error al agregar la deuda');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  // Eliminar una deuda
+  const deleteDebt = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('debts')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      setDebts(debts.filter(debt => debt.id !== id));
+      await saveDebtPlan(false);
+      toast.success('Deuda eliminada correctamente');
+    } catch (error) {
+      console.error('[deleteDebt] Error al eliminar la deuda:', error);
+      toast.error('Error al eliminar la deuda');
+    }
+  };
+
+  const addDebt = () => {
+    const newDebt: DebtItem = {
+      id: `temp_${Date.now()}`,
+      name: '',
+      balance: 0,
+      interestRate: 0,
+      minimumPayment: 0,
+      totalPayments: 0
+    };
+    setDebts([...debts, newDebt]);
+  };
+  
+  const removeDebt = async (id: string) => {
+    if (!id.startsWith('temp_')) {
+      await deleteDebt(id);
+    }
+    setDebts(debts.filter(debt => debt.id !== id));
+  };
+  
+  const updateDebt = async (id: string, field: keyof DebtItem, value: string | number) => {
+    const updatedDebts = debts.map(debt => {
+      if (debt.id === id) {
+        return { ...debt, [field]: typeof value === 'string' ? value : Number(value) };
+      }
+      return debt;
+    });
+    setDebts(updatedDebts);
+  };
+
+  // Guardar cambios cuando se modifica el ingreso mensual o el porcentaje
   useEffect(() => {
     const calculatedBudget = (monthlyIncome * budgetPercentage) / 100;
     setMonthlyBudget(calculatedBudget);
@@ -318,224 +693,105 @@ const DebtCalculator = () => {
     });
   }, [debts, monthlyBudget, selectedStrategy, monthlyIncome]);
   
-  const addDebt = () => {
-    const newDebt: DebtItem = {
-      id: Date.now().toString(),
-      name: 'Nueva Deuda',
-      balance: 1000,
-      interestRate: 10,
-      minimumPayment: 50,
-      totalPayments: 12
-    };
-    setDebts([...debts, newDebt]);
-  };
-  
-  const removeDebt = (id: string) => {
-    setDebts(debts.filter(debt => debt.id !== id));
-  };
-  
-  const updateDebt = (id: string, field: keyof DebtItem, value: string | number) => {
-    setDebts(debts.map(debt => {
-      if (debt.id === id) {
-        return { ...debt, [field]: typeof value === 'string' ? value : Number(value) };
-      }
-      return debt;
-    }));
-  };
-  
   return (
     <div className="animate-fade-in space-y-5">
-      <div className="bg-finflow-card rounded-2xl p-5">
-        <h2 className="text-lg font-bold mb-4">1. Ingresa tus Deudas</h2>
-        
-        <div className="space-y-4 mb-5">
-          {debts.map((debt) => (
-            <div key={debt.id} className="bg-gray-900 rounded-xl p-4 animate-slide-up">
-              <div className="flex justify-between items-center mb-3">
-                <Input
-                  value={debt.name}
-                  onChange={e => updateDebt(debt.id, 'name', e.target.value)}
-                  className="bg-gray-800 border-none text-white max-w-[200px]"
-                  placeholder="Nombre de la deuda"
-                />
-                <button 
-                  onClick={() => removeDebt(debt.id)}
-                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
+      {!showPlan ? (
+        <>
+          {renderStep()}
+          <div className="flex justify-between mt-4">
+            <Button
+              className="bg-gray-800 text-white hover:bg-gray-700"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+            >
+              Anterior
+            </Button>
+            <Button
+              className="bg-finflow-mint text-black font-bold hover:bg-finflow-mint/90"
+              onClick={nextStep}
+              disabled={currentStep === 4}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="space-y-5">
+          <div className="bg-finflow-card rounded-2xl p-5">
+            <h2 className="text-lg font-bold mb-4">Tu Plan de Pagos Óptimo</h2>
+            <div className="grid grid-cols-1 gap-4 mb-5">
+              <div className="bg-gray-900 rounded-xl p-6 text-center">
+                <p className="text-gray-400 mb-3 text-sm">Meses para ser Libre</p>
+                <div className="text-finflow-mint flex gap-2 text-4xl justify-center items-baseline">
+                  <span className="font-semibold">{paymentPlan.months}</span>
+                  <span className="text-xl">meses</span>
+                </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <Label className="mb-1 block text-xs">Saldo</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-                    <CurrencyInput
-                      value={debt.balance}
-                      onChange={(value) => updateDebt(debt.id, 'balance', value)}
-                      className="bg-gray-800 border-none text-white pl-7"
-                      min={0}
-                    />
-                  </div>
+              <div className="bg-gray-900 rounded-xl p-6 text-center">
+                <p className="text-gray-400 mb-3 text-sm">Total Intereses</p>
+                <div className="text-finflow-mint flex gap-1 text-4xl justify-center items-baseline">
+                  <span>$</span>
+                  <span className="font-semibold truncate">{formatCurrency(paymentPlan.totalInterest)}</span>
                 </div>
-                
-                <div>
-                  <Label className="mb-1 block text-xs">Tasa de Interés</Label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      value={debt.interestRate}
-                      onChange={e => updateDebt(debt.id, 'interestRate', Number(e.target.value))}
-                      className="bg-gray-800 border-none text-white pr-7"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="mb-1 block text-xs">Cuota Mínima</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-                    <CurrencyInput
-                      value={debt.minimumPayment}
-                      onChange={(value) => updateDebt(debt.id, 'minimumPayment', value)}
-                      className="bg-gray-800 border-none text-white pl-7"
-                      min={0}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="mb-1 block text-xs">Cuotas Totales</Label>
-                  <Input
-                    type="number"
-                    value={debt.totalPayments}
-                    onChange={e => updateDebt(debt.id, 'totalPayments', Number(e.target.value))}
-                    className="bg-gray-800 border-none text-white"
-                    min={1}
-                  />
+              </div>
+              <div className="bg-gray-900 rounded-xl p-6 text-center">
+                <p className="text-gray-400 mb-3 text-sm">Presupuesto Mensual</p>
+                <div className="text-finflow-mint flex gap-1 text-4xl justify-center items-baseline">
+                  <span>$</span>
+                  <span className="font-semibold truncate">{formatCurrency(monthlyBudget)}</span>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-        
-        <Button
-          onClick={addDebt}
-          variant="outline"
-          className="w-full border-dashed border-gray-700 bg-transparent text-finflow-mint hover:bg-gray-900 hover:text-finflow-mint flex items-center justify-center gap-2"
-        >
-          <Plus size={16} />
-          <span>Agregar otra Deuda</span>
-        </Button>
-      </div>
 
-      <div className="bg-finflow-card rounded-2xl p-5">
-        <h2 className="text-lg font-bold mb-4">2. Selecciona tu Estrategia</h2>
-        
-        <Select value={selectedStrategy} onValueChange={(value: PaymentStrategy) => setSelectedStrategy(value)}>
-          <SelectTrigger className="bg-gray-900 border-gray-800">
-            <SelectValue placeholder="Selecciona una estrategia" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="snowball">Bola de Nieve</SelectItem>
-            <SelectItem value="avalanche">Avalancha</SelectItem>
-            <SelectItem value="proportional">Proporcional</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="mt-4 bg-gray-900 rounded-xl p-4">
-          <p className="text-sm text-gray-400">
-            {STRATEGY_DESCRIPTIONS[selectedStrategy]}
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-finflow-card rounded-2xl p-5">
-        <h2 className="text-lg font-bold mb-4">3. Ingresa tu Ingreso Mensual</h2>
-        
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-          <CurrencyInput
-            value={monthlyIncome}
-            onChange={value => setMonthlyIncome(value)}
-            className="bg-gray-900 border-gray-800 text-white pl-7"
-            min={0}
-            placeholder="Ingreso mensual"
-          />
-        </div>
-      </div>
-
-      <div className="bg-finflow-card rounded-2xl p-5">
-        <h2 className="text-lg font-bold mb-4">Plan de Pagos Óptimo</h2>
-        
-        <div className="grid grid-cols-1 gap-4 mb-5">
-          <div className="bg-gray-900 rounded-xl p-6 text-center">
-            <p className="text-gray-400 mb-3 text-sm">Meses para ser Libre</p>
-            <div className="text-finflow-mint flex gap-2 text-4xl justify-center items-baseline">
-              <span className="font-semibold">{paymentPlan.months}</span>
-              <span className="text-xl">meses</span>
-            </div>
-          </div>
-          
-          <div className="bg-gray-900 rounded-xl p-6 text-center">
-            <p className="text-gray-400 mb-3 text-sm">Total Intereses</p>
-            <div className="text-finflow-mint flex gap-1 text-4xl justify-center items-baseline">
-              <span>$</span>
-              <span className="font-semibold truncate">{formatCurrency(paymentPlan.totalInterest)}</span>
-            </div>
-          </div>
-
-          <div className="bg-gray-900 rounded-xl p-6 text-center">
-            <p className="text-gray-400 mb-3 text-sm">Presupuesto Mensual</p>
-            <div className="text-finflow-mint flex gap-1 text-4xl justify-center items-baseline">
-              <span>$</span>
-              <span className="font-semibold truncate">{formatCurrency(monthlyBudget)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-900 rounded-xl p-4 mb-5">
-          <div className="flex justify-between items-center mb-2">
-            <Label>Porcentaje de Ingreso para Deudas</Label>
-            <span className="text-finflow-mint font-semibold">{formatPercentage(budgetPercentage)}%</span>
-          </div>
-          
-          <Slider
-            value={[budgetPercentage]}
-            onValueChange={([value]) => setBudgetPercentage(value)}
-            min={paymentPlan.recommendedPercentage}
-            max={70}
-            step={1}
-            className="my-4"
-          />
-          
-          <p className="text-sm text-gray-400">
-            {paymentPlan.recommendedPercentage > 0 && 
-              `Se recomienda destinar al menos el ${formatPercentage(paymentPlan.recommendedPercentage)}% de tus ingresos para pagar tus deudas.`
-            }
-          </p>
-        </div>
-
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-4">Desglose Mensual del Plan</h3>
-          <div className="space-y-2">
-            {paymentPlan.monthlyPlans.map((plan) => (
-              <MonthlyPlanDetail
-                key={plan.month}
-                plan={plan}
-                debts={debts}
-                isExpanded={expandedMonth === plan.month}
-                onToggle={() => setExpandedMonth(expandedMonth === plan.month ? null : plan.month)}
+            <div className="bg-gray-900 rounded-xl p-4 mb-5">
+              <div className="flex justify-between items-center mb-2">
+                <Label>Porcentaje de Ingreso para Deudas</Label>
+                <span className="text-finflow-mint font-semibold">{formatPercentage(budgetPercentage)}%</span>
+              </div>
+              <Slider
+                value={[budgetPercentage]}
+                onValueChange={([value]) => setBudgetPercentage(value)}
+                min={paymentPlan.recommendedPercentage}
+                max={70}
+                step={1}
+                className="my-4"
               />
-            ))}
+            </div>
+
+            <div className="flex gap-4">
+              <Button
+                className="flex-1 bg-gray-800 text-white hover:bg-gray-700"
+                onClick={() => setCurrentStep(1)}
+              >
+                Ver/Editar Mis Deudas
+              </Button>
+              <Button
+                className="flex-1 bg-finflow-mint text-black font-bold hover:bg-finflow-mint/90"
+                onClick={() => setExpandedMonth(1)}
+              >
+                Ver Plan de Pagos Mensual
+              </Button>
+            </div>
           </div>
+
+          {expandedMonth && (
+            <div className="bg-finflow-card rounded-2xl p-5">
+              <h3 className="text-lg font-semibold mb-4">Desglose Mensual del Plan</h3>
+              <div className="space-y-2">
+                {paymentPlan.monthlyPlans.map((plan) => (
+                  <MonthlyPlanDetail
+                    key={plan.month}
+                    plan={plan}
+                    debts={debts}
+                    isExpanded={expandedMonth === plan.month}
+                    onToggle={() => setExpandedMonth(expandedMonth === plan.month ? null : plan.month)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 };
