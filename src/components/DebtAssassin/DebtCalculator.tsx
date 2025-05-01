@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { DebtItem } from '@/types';
@@ -166,7 +165,7 @@ const DebtCalculator = () => {
       if (tempDebts.length > 0 && debtPlanId) {
         for (const debt of tempDebts) {
           const result = await saveDebt(debt);
-          if (result.success && result.id) {
+          if (result && result.success && result.id) {
             // Update the debt ID in state to match the database
             setDebts(prev => prev.map(d => 
               d.id === debt.id ? { ...d, id: result.id as string } : d
