@@ -199,11 +199,13 @@ const DebtCalculator = () => {
         for (const debt of tempDebts) {
           const result = await saveDebt(debt);
           // Check if result is not false before accessing its properties
-          if (result && typeof result === 'object' && result.success && result.id) {
+          if (result && typeof result === 'object' && result.success) {
             // Update the debt ID in state to match the database
             setDebts(prev => prev.map(d => 
               d.id === debt.id ? { ...d, id: result.id as string } : d
             ));
+          } else {
+            toast.error('Error al guardar el plan de pago');
           }
         }
       }

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +13,7 @@ const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [userName, setUserName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
 
   if (user) {
@@ -27,6 +29,11 @@ const AuthPage = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              user_name: userName,
+            },
+          },
         });
         if (error) throw error;
         toast.success('Revisa tu email para confirmar tu cuenta');
@@ -66,6 +73,19 @@ const AuthPage = () => {
               className="bg-gray-800 border-gray-700"
             />
           </div>
+          
+          {isSignUp && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Nombre</label>
+              <Input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                required
+                className="bg-gray-800 border-gray-700"
+              />
+            </div>
+          )}
           
           <div>
             <label className="block text-sm font-medium mb-2">Contraseña</label>

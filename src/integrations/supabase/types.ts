@@ -69,9 +69,13 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          last_calculated_at: string | null
           monthly_budget: number
           monthly_income: number
           payment_strategy: string
+          total_interest: number | null
+          total_months: number | null
+          total_paid: number | null
           updated_at: string
           user_id: string
         }
@@ -80,9 +84,13 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          last_calculated_at?: string | null
           monthly_budget: number
           monthly_income: number
           payment_strategy: string
+          total_interest?: number | null
+          total_months?: number | null
+          total_paid?: number | null
           updated_at?: string
           user_id: string
         }
@@ -91,9 +99,13 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          last_calculated_at?: string | null
           monthly_budget?: number
           monthly_income?: number
           payment_strategy?: string
+          total_interest?: number | null
+          total_months?: number | null
+          total_paid?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -106,6 +118,7 @@ export type Database = {
           debt_plan_id: string
           id: string
           interest_rate: number
+          is_active: boolean | null
           is_paid: boolean
           minimum_payment: number
           name: string
@@ -118,6 +131,7 @@ export type Database = {
           debt_plan_id: string
           id?: string
           interest_rate: number
+          is_active?: boolean | null
           is_paid?: boolean
           minimum_payment: number
           name: string
@@ -130,6 +144,7 @@ export type Database = {
           debt_plan_id?: string
           id?: string
           interest_rate?: number
+          is_active?: boolean | null
           is_paid?: boolean
           minimum_payment?: number
           name?: string
@@ -180,6 +195,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          updated_at?: string
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_name?: string | null
+        }
+        Relationships: []
       }
       transactions: {
         Row: {
