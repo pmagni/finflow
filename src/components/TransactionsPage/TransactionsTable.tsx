@@ -1,246 +1,287 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { getCategories } from '@/services/categoryService';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Search, Filter, Edit, Trash2, Calendar, ArrowUp, ArrowDown, CircleSlash } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { DatabaseError } from '@/types/errors';
+import React, { useState } from 'react';
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import {
   Table,
-  TableBody as ShadcnTableBody,
+  TableBody,
   TableCell,
   TableHead,
-  TableHeader as ShadcnTableHeader,
+  TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table"
+import { Transaction } from '@/types';
+import { ArrowDown, ArrowUp, CalendarIcon, Copy, Edit, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { TransactionForm } from '@/components/ExpenseOverview/TransactionForm';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { formatCurrency, formatShortDate } from '@/utils/formatters';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "@/components/ui/dropdown-menu"
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { addDays, format } from 'date-fns';
 
-// Types
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  transaction_type: 'income' | 'expense' | string;
-  created_at?: string;
-  updated_at?: string;
-  user_id?: string;
+interface DateRange {
+  from?: Date;
+  to?: Date;
 }
 
-interface Transaction {
-  id: string;
-  type: 'income' | 'expense';
-  description: string;
-  amount: number;
-  category_id: string;
-  user_id: string;
-  created_at: string;
-  transaction_date?: string;
-  currency?: string;
-  category?: {
-    name: string;
-    icon: string;
-  };
+interface Props {
+  transactions: Transaction[];
 }
 
-type SortField = 'date' | 'amount' | 'description' | 'category';
-type SortDirection = 'asc' | 'desc';
+const TransactionsTable = ({ transactions }: Props) => {
+  const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateRange>({ from: undefined, to: undefined });
 
-// Components
-import TransactionsTableHeader from './components/TableHeader';
-import TransactionsTableBody from './components/TableBody';
-import TransactionsFilters from './components/Filters';
-import TransactionsDeleteDialog from './components/DeleteDialog';
-import TransactionsEditDialog from './components/EditDialog';
+  const columns: ColumnDef<Transaction>[] = [
+    {
+      accessorKey: 'date',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Fecha
+            <ArrowUp className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'asc' && 'hidden')} />
+            <ArrowDown className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'desc' && 'hidden')} />
+          </Button>
+        )
+      },
+      cell: ({ row }) => format(new Date(row.getValue("date")), "PPP"),
+      filterFn: (row, id, value: DateRange) => {
+        const date = new Date(row.getValue(id));
+        if (value.from) {
+          if (value.to) {
+            return date >= value.from && date <= value.to
+          }
+          return date >= value.from
+        }
+        return true
+      },
+    },
+    {
+      accessorKey: 'description',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Descripción
+            <ArrowUp className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'asc' && 'hidden')} />
+            <ArrowDown className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'desc' && 'hidden')} />
+          </Button>
+        )
+      },
+    },
+    {
+      accessorKey: 'category.name',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Categoría
+            <ArrowUp className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'asc' && 'hidden')} />
+            <ArrowDown className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'desc' && 'hidden')} />
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="flex space-x-2">
+          <Badge variant="secondary">
+            {row.getValue('category.name')}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'amount',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Monto
+            <ArrowUp className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'asc' && 'hidden')} />
+            <ArrowDown className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'desc' && 'hidden')} />
+          </Button>
+        )
+      },
+      cell: ({ row }) => formatCurrency(row.getValue("amount")),
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Acciones</div>,
+      cell: ({ row }) => {
+        const transaction = row.original;
 
-export function TransactionsTable() {
-  const { handleError } = useErrorHandler();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
-  const [sortField, setSortField] = useState<SortField>('date');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+        return (
+          <div className="relative flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  {/* <MoreHorizontal className="h-4 w-4" /> */}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem
+                //   onClick={() => onCopy(payment.id)}
+                >
+                  <Copy className="mr-2 h-4 w-4" /> Copiar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Edit className="mr-2 h-4 w-4" /> Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                //   onClick={() => onDelete(payment.id)}
+                  className="text-red-500 focus:text-red-500"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )
+      },
+    },
+  ];
 
-  // Fetch transactions with their categories
-  const fetchTransactions = async () => {
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('transactions')
-        .select(`
-          *,
-          category:categories (
-            name,
-            icon
-          )
-        `)
-        .order('created_at', { ascending: false });
+  const table = useReactTable({
+    data: transactions,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    getFilteredRowModel: getCoreRowModel(),
+    getSortedRowModel: getCoreRowModel(),
+    state: {
+      sorting,
+      columnFilters,
+      globalFilter,
+    },
+  });
 
-      if (error) throw new DatabaseError('Error al cargar las transacciones', error);
-
-      const typedData = data as unknown as Transaction[];
-      setTransactions(typedData);
-    } catch (error) {
-      handleError(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load categories
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const categoriesData = await getCategories();
-        setCategories(categoriesData);
-      } catch (error) {
-        handleError(error);
-      }
-    };
-
-    loadCategories();
-    fetchTransactions();
-  }, []);
-
-  // Handle sort changes
-  const handleSort = (field: SortField) => {
-    if (field === sortField) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  // Handle transaction deletion
-  const handleDeleteTransaction = async () => {
-    if (!selectedTransaction) return;
-
-    try {
-      const { error } = await supabase
-        .from('transactions')
-        .delete()
-        .eq('id', selectedTransaction.id);
-
-      if (error) throw new DatabaseError('Error al eliminar la transacción', error);
-
-      toast.success('Transacción eliminada correctamente');
-      fetchTransactions();
-    } catch (error) {
-      handleError(error);
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setSelectedTransaction(null);
-    }
-  };
-
-  // Handle edit click
-  const handleEditClick = (transaction: Transaction) => {
-    setSelectedTransaction(transaction);
-    setIsEditDialogOpen(true);
-  };
-
-  // Handle delete click
-  const handleDeleteClick = (transaction: Transaction) => {
-    setSelectedTransaction(transaction);
-    setIsDeleteDialogOpen(true);
-  };
-
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory('');
-    setDateRange({});
+  const handleDateChange = (range: { from?: Date, to?: Date }) => {
+    setDateFilter({ 
+      from: range.from || new Date(),
+      to: range.to 
+    });
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Transacciones</h2>
+    <div className="w-full">
+      <div className="flex items-center py-4">
+        <Input
+          placeholder="Filtrar transacciones..."
+          value={globalFilter ?? ""}
+          onChange={e => setGlobalFilter(e.target.value)}
+          className="mr-4"
+        />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[300px] pl-3 text-left font-normal",
+                !dateFilter?.from && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateFilter?.from ? (
+                dateFilter.to ? (
+                  <>
+                    {format(dateFilter.from, "PPP")} - {format(dateFilter.to, "PPP")}
+                  </>
+                ) : (
+                  format(dateFilter.from, "PPP")
+                )
+              ) : (
+                <span>Pick a date</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="range"
+              defaultMonth={dateFilter?.from}
+              selected={dateFilter}
+              onSelect={handleDateChange}
+              disabled={(date) =>
+                date > addDays(new Date(), 0) || date < addDays(new Date(), -365)
+              }
+              numberOfMonths={2}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
-
-      <TransactionsFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        dateRange={dateRange}
-        setDateRange={setDateRange}
-        categories={categories}
-        onClearFilters={clearFilters}
-      />
-
-      <ScrollArea className="h-[calc(100vh-200px)]">
+      <div className="rounded-md border">
         <Table>
-          <TransactionsTableHeader
-            sortField={sortField}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-          />
-          <TransactionsTableBody
-            transactions={transactions}
-            onEdit={handleEditClick}
-            onDelete={handleDeleteClick}
-          />
+          <TableHeader>
+            {table.getHeaderGroups().map(headerGroup => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map(header => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map(row => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map(cell => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
         </Table>
-      </ScrollArea>
-
-      {selectedTransaction && (
-        <>
-          <TransactionsDeleteDialog
-            isOpen={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-            onConfirm={handleDeleteTransaction}
-            transactionDescription={selectedTransaction.description}
-          />
-          <TransactionsEditDialog
-            isOpen={isEditDialogOpen}
-            onOpenChange={setIsEditDialogOpen}
-            transaction={selectedTransaction}
-          />
-        </>
-      )}
+      </div>
     </div>
-  );
-} 
+  )
+}
+
+export default TransactionsTable;

@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import AppLayout from "@/components/Layout/AppLayout";
@@ -11,6 +12,7 @@ import AuthPage from "./pages/AuthPage";
 import SettingsPage from "./pages/SettingsPage";
 import { TavilySearchPage } from "./pages/TavilySearchPage";
 import CategoriesPage from "./pages/CategoriesPage";
+import ProfilePage from "./pages/ProfilePage";
 
 const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -86,6 +88,16 @@ const AppRoutes = () => (
       }
     />
     <Route
+      path="/profile"
+      element={
+        <RequireAuth>
+          <AppLayout>
+            <ProfilePage />
+          </AppLayout>
+        </RequireAuth>
+      }
+    />
+    <Route
       path="/tavily-search"
       element={
         <RequireAuth>
@@ -99,4 +111,4 @@ const AppRoutes = () => (
   </Routes>
 );
 
-export default AppRoutes; 
+export default AppRoutes;
