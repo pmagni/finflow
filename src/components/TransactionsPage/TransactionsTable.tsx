@@ -1,280 +1,161 @@
+
 import React, { useState } from 'react';
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { getCoreRowModel } from '@tanstack/react-table';
 import { Transaction } from '@/types';
-import { ArrowDown, ArrowUp, CalendarIcon, Copy, Edit, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/utils';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { addDays, format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
+import { Table } from "@/components/ui/table";
+import TransactionsTableHeader from './components/TableHeader';
+import TransactionsTableBody from './components/TableBody';
+import TransactionsFilters from './components/Filters';
+import TransactionsEditDialog from './components/EditDialog';
+import TransactionsDeleteDialog from './components/DeleteDialog';
 
 interface TransactionsTableProps {
   transactions: Transaction[];
 }
 
-// Fix the default export
 const TransactionsTable = ({ transactions = [] }: TransactionsTableProps) => {
-  const [sorting, setSorting] = useState<any[]>([]);
-  const [columnFilters, setColumnFilters] = useState<any[]>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [sorting, setSorting] = useState<{ field: 'date' | 'amount' | 'description' | 'category'; direction: 'asc' | 'desc' }>({
+    field: 'date',
+    direction: 'desc'
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [dateFilter, setDateFilter] = useState<DateRange | undefined>(undefined);
+  
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
 
-  const columns: ColumnDef<Transaction>[] = [
-    {
-      accessorKey: 'date',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Fecha
-            <ArrowUp className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'asc' && 'hidden')} />
-            <ArrowDown className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'desc' && 'hidden')} />
-          </Button>
-        )
-      },
-      cell: ({ row }) => format(new Date(row.getValue("date")), "PPP"),
-      filterFn: (row, id, value: DateRange) => {
-        const date = new Date(row.getValue(id));
-        if (value.from) {
-          if (value.to) {
-            return date >= value.from && date <= value.to
-          }
-          return date >= value.from
-        }
-        return true
-      },
-    },
-    {
-      accessorKey: 'description',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Descripción
-            <ArrowUp className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'asc' && 'hidden')} />
-            <ArrowDown className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'desc' && 'hidden')} />
-          </Button>
-        )
-      },
-    },
-    {
-      accessorKey: 'category.name',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Categoría
-            <ArrowUp className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'asc' && 'hidden')} />
-            <ArrowDown className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'desc' && 'hidden')} />
-          </Button>
-        )
-      },
-      cell: ({ row }) => (
-        <div className="flex space-x-2">
-          <Badge variant="secondary">
-            {row.getValue('category.name')}
-          </Badge>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'amount',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Monto
-            <ArrowUp className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'asc' && 'hidden')} />
-            <ArrowDown className={cn("ml-2 h-4 w-4", column.getIsSorted() === 'desc' && 'hidden')} />
-          </Button>
-        )
-      },
-      cell: ({ row }) => formatCurrency(row.getValue("amount")),
-    },
-    {
-      id: 'actions',
-      header: () => <div className="text-right">Acciones</div>,
-      cell: ({ row }) => {
-        const transaction = row.original;
-
-        return (
-          <div className="relative flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
-                  {/* <MoreHorizontal className="h-4 w-4" /> */}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem
-                //   onClick={() => onCopy(payment.id)}
-                >
-                  <Copy className="mr-2 h-4 w-4" /> Copiar
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" /> Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                //   onClick={() => onDelete(payment.id)}
-                  className="text-red-500 focus:text-red-500"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )
-      },
-    },
-  ];
-
-  const table = useReactTable({
-    data: transactions,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    getFilteredRowModel: getCoreRowModel(),
-    getSortedRowModel: getCoreRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-    },
+  // Sort transactions based on current sort field and direction
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    const field = sorting.field;
+    
+    if (field === 'category') {
+      const aValue = a.category?.name || '';
+      const bValue = b.category?.name || '';
+      return sorting.direction === 'asc' 
+        ? aValue.localeCompare(bValue) 
+        : bValue.localeCompare(aValue);
+    }
+    
+    // For date, amount, description
+    const aValue = a[field];
+    const bValue = b[field];
+    
+    if (field === 'date') {
+      return sorting.direction === 'asc' 
+        ? new Date(aValue).getTime() - new Date(bValue).getTime()
+        : new Date(bValue).getTime() - new Date(aValue).getTime();
+    }
+    
+    if (field === 'amount') {
+      return sorting.direction === 'asc' 
+        ? Number(aValue) - Number(bValue)
+        : Number(bValue) - Number(aValue);
+    }
+    
+    // Default string comparison for other fields
+    return sorting.direction === 'asc' 
+      ? String(aValue).localeCompare(String(bValue))
+      : String(bValue).localeCompare(String(aValue));
   });
 
-  const handleDateChange = (range: DateRange | undefined) => {
-    setDateFilter(range);
+  // Filter transactions
+  const filteredTransactions = sortedTransactions.filter(transaction => {
+    // Search term filter
+    const searchMatch = searchTerm === "" || 
+      transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.category?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Category filter
+    const categoryMatch = selectedCategory === "" || 
+      transaction.category?.name === selectedCategory;
+    
+    // Date filter
+    let dateMatch = true;
+    if (dateFilter?.from) {
+      const transactionDate = new Date(transaction.date);
+      dateMatch = transactionDate >= dateFilter.from;
+      
+      if (dateMatch && dateFilter.to) {
+        dateMatch = transactionDate <= dateFilter.to;
+      }
+    }
+    
+    return searchMatch && categoryMatch && dateMatch;
+  });
+
+  const handleSort = (field: 'date' | 'amount' | 'description' | 'category') => {
+    setSorting(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const handleEdit = (transaction: Transaction) => {
+    setTransactionToEdit(transaction);
+  };
+
+  const handleDelete = (transaction: Transaction) => {
+    setTransactionToDelete(transaction);
+  };
+
+  const handleDeleteConfirm = () => {
+    // Here we would call the API to delete the transaction
+    console.log('Deleting transaction:', transactionToDelete?.id);
+    setTransactionToDelete(null);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("");
+    setDateFilter(undefined);
   };
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filtrar transacciones..."
-          value={globalFilter ?? ""}
-          onChange={e => setGlobalFilter(e.target.value)}
-          className="mr-4"
-        />
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-[300px] pl-3 text-left font-normal",
-                !dateFilter?.from && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateFilter?.from ? (
-                dateFilter.to ? (
-                  <>
-                    {format(dateFilter.from, "PPP")} - {format(dateFilter.to, "PPP")}
-                  </>
-                ) : (
-                  format(dateFilter.from, "PPP")
-                )
-              ) : (
-                <span>Pick a date</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="range"
-              defaultMonth={dateFilter?.from}
-              selected={dateFilter}
-              onSelect={handleDateChange}
-              disabled={(date) =>
-                date > addDays(new Date(), 0) || date < addDays(new Date(), -365)
-              }
-              numberOfMonths={2}
-              className={cn("p-3 pointer-events-auto")}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      <div className="rounded-md border">
+      <TransactionsFilters
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        dateFilter={dateFilter}
+        setDateFilter={setDateFilter}
+        onClearFilters={clearFilters}
+        categories={[]} // This should come from your categories data
+      />
+      
+      <div className="rounded-md border mt-4">
         <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map(header => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map(row => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
+          <TransactionsTableHeader
+            sortField={sorting.field}
+            sortDirection={sorting.direction}
+            onSort={handleSort}
+          />
+          <TransactionsTableBody
+            transactions={filteredTransactions}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         </Table>
       </div>
+
+      {transactionToEdit && (
+        <TransactionsEditDialog
+          isOpen={!!transactionToEdit}
+          onOpenChange={(open) => !open && setTransactionToEdit(null)}
+          transaction={transactionToEdit}
+        />
+      )}
+
+      {transactionToDelete && (
+        <TransactionsDeleteDialog
+          isOpen={!!transactionToDelete}
+          onOpenChange={(open) => !open && setTransactionToDelete(null)}
+          onConfirm={handleDeleteConfirm}
+          transactionDescription={transactionToDelete.description}
+        />
+      )}
     </div>
   );
 };

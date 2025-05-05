@@ -1,4 +1,5 @@
-import { Search, Filter, Calendar, CircleSlash } from 'lucide-react';
+
+import { Search, CircleSlash, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,15 +16,14 @@ import {
 } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { DateRange } from 'react-day-picker';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface Category {
   id: string;
   name: string;
   icon: string;
   transaction_type: 'income' | 'expense' | string;
-  created_at?: string;
-  updated_at?: string;
-  user_id?: string;
 }
 
 interface FiltersProps {
@@ -31,8 +31,8 @@ interface FiltersProps {
   setSearchTerm: (term: string) => void;
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
-  dateRange: DateRange | undefined;
-  setDateRange: (range: DateRange | undefined) => void;
+  dateFilter: DateRange | undefined;
+  setDateFilter: (range: DateRange | undefined) => void;
   categories: Category[];
   onClearFilters: () => void;
 }
@@ -42,8 +42,8 @@ export const TransactionsFilters = ({
   setSearchTerm,
   selectedCategory,
   setSelectedCategory,
-  dateRange,
-  setDateRange,
+  dateFilter,
+  setDateFilter,
   categories,
   onClearFilters,
 }: FiltersProps) => {
@@ -66,7 +66,7 @@ export const TransactionsFilters = ({
         <SelectContent>
           <SelectItem value="">Todas las categorías</SelectItem>
           {categories.map((category) => (
-            <SelectItem key={category.id} value={category.id}>
+            <SelectItem key={category.id} value={category.name}>
               {category.name}
             </SelectItem>
           ))}
@@ -77,13 +77,13 @@ export const TransactionsFilters = ({
         <PopoverTrigger asChild>
           <Button variant="outline" className="w-[180px] justify-start">
             <Calendar className="mr-2 h-4 w-4" />
-            {dateRange?.from ? (
-              dateRange.to ? (
+            {dateFilter?.from ? (
+              dateFilter.to ? (
                 <>
-                  {dateRange.from.toLocaleDateString()} - {dateRange.to.toLocaleDateString()}
+                  {format(dateFilter.from, 'dd/MM/yyyy')} - {format(dateFilter.to, 'dd/MM/yyyy')}
                 </>
               ) : (
-                dateRange.from.toLocaleDateString()
+                format(dateFilter.from, 'dd/MM/yyyy')
               )
             ) : (
               <span>Rango de fechas</span>
@@ -94,10 +94,11 @@ export const TransactionsFilters = ({
           <CalendarComponent
             initialFocus
             mode="range"
-            defaultMonth={dateRange?.from}
-            selected={dateRange}
-            onSelect={setDateRange}
+            defaultMonth={dateFilter?.from}
+            selected={dateFilter}
+            onSelect={setDateFilter}
             numberOfMonths={2}
+            className={cn("p-3 pointer-events-auto")}
           />
         </PopoverContent>
       </Popover>
