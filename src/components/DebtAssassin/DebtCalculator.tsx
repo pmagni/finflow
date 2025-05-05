@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { DebtItem } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ import PaymentPlanDisplay from './components/PaymentPlanDisplay';
 import IncomeInput from './components/IncomeInput';
 import StrategySelector from './components/StrategySelector';
 import { debtService } from '@/services/debtService';
+import { Loader2 } from 'lucide-react';
 
 const DebtCalculator = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -31,6 +32,7 @@ const DebtCalculator = () => {
   const [user, setUser] = useState<any>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [savingInProgress, setSavingInProgress] = useState(false);
+  const [loadingDebts, setLoadingDebts] = useState(false);
 
   // Load user data
   useEffect(() => {
@@ -73,20 +75,51 @@ const DebtCalculator = () => {
   const loadUserDebts = async () => {
     if (!user?.id) return;
     
-    const { debtPlan, debts } = await debtService.loadUserDebts(user.id);
-    
-    if (debtPlan) {
-      setDebtPlanId(debtPlan.id);
-      setMonthlyIncome(debtPlan.monthly_income || 0);
-      setMonthlyBudget(debtPlan.monthly_budget || 0);
-      setBudgetPercentage(debtPlan.budget_percentage || 30);
-      setSelectedStrategy((debtPlan.payment_strategy as PaymentStrategy) || 'snowball');
+    setLoadingDebts(true);
+    try {
+      const { debtPlan, debts } = await debtService.loadUserDebts(user.id);
       
-      if (debts && debts.length > 0) {
+      if (debtPlan) {
+        // Configuramos el plan existente
+        setDebtPlanId(debtPlan.id);
+        const income = debtPlan.monthly_income || 0;
+        const percentage = debtPlan.budget_percentage || 30;
+        const strategy = (debtPlan.payment_strategy as PaymentStrategy) || 'snowball';
+        
+        // Actualizamos los estados
+        setMonthlyIncome(income);
+        setBudgetPercentage(percentage);
+        setMonthlyBudget((income * percentage) / 100);
+        setSelectedStrategy(strategy);
         setDebts(debts);
-        // If there are debts, show the plan automatically
+        
+        // Calculamos el plan de pagos
+        const calculatedPlan = calculatePaymentPlan(
+          debts,
+          (income * percentage) / 100,
+          strategy,
+          income
+        );
+        setPaymentPlan(calculatedPlan);
+        
+        // Mostramos el plan
         setShowPlan(true);
+      } else {
+        // Si no hay plan, reseteamos todo a valores iniciales
+        setDebtPlanId(null);
+        setDebts([]);
+        setMonthlyIncome(0);
+        setBudgetPercentage(30);
+        setMonthlyBudget(0);
+        setSelectedStrategy('snowball');
+        setShowPlan(false);
+        setCurrentStep(1);
       }
+    } catch (error) {
+      console.error('Error al cargar el plan de deudas:', error);
+      toast.error('Error al cargar el plan de deudas');
+    } finally {
+      setLoadingDebts(false);
     }
   };
 
@@ -235,7 +268,7 @@ const DebtCalculator = () => {
     for (const debt of debts) {
       if (isDebtValid(debt)) {
         const result = await saveDebt(debt);
-        if (!result.success) {
+        if (typeof result === 'object' && !result.success) {
           success = false;
         }
       } else {
@@ -274,6 +307,14 @@ const DebtCalculator = () => {
     setMonthlyBudget(calculatedBudget);
   }, [monthlyIncome, budgetPercentage]);
   
+  // Calculate payment plan based on debts and strategy
+  useEffect(() => {
+    if (debts.length > 0 && monthlyIncome > 0) {
+      const plan = calculatePaymentPlan(debts, monthlyBudget, selectedStrategy, monthlyIncome);
+      setPaymentPlan(plan);
+    }
+  }, [debts, monthlyBudget, selectedStrategy, monthlyIncome]);
+  
   // Update debt plan in database when budget changes
   useEffect(() => {
     if (debtPlanId && user && monthlyIncome > 0) {
@@ -284,14 +325,36 @@ const DebtCalculator = () => {
     }
   }, [monthlyIncome, budgetPercentage, selectedStrategy]);
 
-  // Calculate payment plan based on debts and strategy
-  useEffect(() => {
-    const plan = calculatePaymentPlan(debts, monthlyBudget, selectedStrategy, monthlyIncome);
-    setPaymentPlan(plan);
-  }, [debts, monthlyBudget, selectedStrategy, monthlyIncome]);
+  const handleGeneratePlan = async () => {
+    const confirmModal = confirm('¿Estás seguro que quieres generar tu plan de pagos?');
+    if (!confirmModal) return;
+
+    await toast.promise(
+      async () => {
+        await saveDebtPlan();
+        setShowPlan(true);
+      },
+      {
+        loading: 'Generando plan de pagos...',
+        success: 'Plan generado exitosamente',
+        error: 'Error al generar el plan'
+      }
+    );
+  };
 
   // Render the appropriate step of the debt calculator
   const renderStep = () => {
+    if (loadingDebts) {
+      return (
+        <div className="bg-finflow-card rounded-2xl p-5">
+          <div className="flex flex-col items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-finflow-mint mb-2" />
+            <p className="text-gray-400">Cargando tu plan de deudas...</p>
+          </div>
+        </div>
+      );
+    }
+
     switch (currentStep) {
       case 1:
         return (
@@ -322,10 +385,7 @@ const DebtCalculator = () => {
             <h2 className="text-lg font-bold mb-4">4. Genera tu Plan de Pagos</h2>
             <Button
               className="w-full bg-finflow-mint text-black font-bold hover:bg-finflow-mint/90"
-              onClick={async () => {
-                await saveDebtPlan();
-                setShowPlan(true);
-              }}
+              onClick={handleGeneratePlan}
             >
               Generar Mi Plan de Pagos
             </Button>
@@ -338,7 +398,14 @@ const DebtCalculator = () => {
   
   return (
     <div className="animate-fade-in space-y-5">
-      {!showPlan ? (
+      {loadingDebts ? (
+        <div className="bg-finflow-card rounded-2xl p-5">
+          <div className="flex flex-col items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-finflow-mint mb-2" />
+            <p className="text-gray-400">Cargando tu plan de deudas...</p>
+          </div>
+        </div>
+      ) : !showPlan ? (
         <>
           {renderStep()}
           <div className="flex justify-between mt-4">
@@ -352,7 +419,7 @@ const DebtCalculator = () => {
             <Button
               className="bg-finflow-mint text-black font-bold hover:bg-finflow-mint/90"
               onClick={currentStep === 1 ? saveAllDebtsAndContinue : nextStep}
-              disabled={currentStep === 4}
+              disabled={currentStep === 4 || savingInProgress}
             >
               {currentStep === 1 ? 'Guardar y Continuar' : 'Siguiente'}
             </Button>
@@ -367,7 +434,10 @@ const DebtCalculator = () => {
           debts={debts}
           expandedMonth={expandedMonth}
           setExpandedMonth={setExpandedMonth}
-          goToEditDebts={() => setCurrentStep(1)}
+          goToEditDebts={() => {
+            setCurrentStep(1);
+            setShowPlan(false);
+          }}
         />
       )}
     </div>

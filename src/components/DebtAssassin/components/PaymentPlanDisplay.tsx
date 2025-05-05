@@ -1,5 +1,6 @@
-
 import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,23 @@ const PaymentPlanDisplay: React.FC<PaymentPlanDisplayProps> = ({
   setExpandedMonth,
   goToEditDebts
 }) => {
+  const { user } = useUser();
+
+  const handleResetPlan = async () => {
+    if (!confirm('¿Estás seguro que quieres eliminar tu plan de pagos y comenzar uno nuevo?')) return;
+    const { error } = await supabase
+      .from('debt_plans')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      alert('Ocurrió un error al eliminar el plan. Intenta nuevamente.');
+      return;
+    }
+
+    window.location.reload();
+  };
+
   return (
     <div className="space-y-5">
       <div className="bg-finflow-card rounded-2xl p-5">
@@ -71,18 +89,26 @@ const PaymentPlanDisplay: React.FC<PaymentPlanDisplayProps> = ({
           />
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <Button
-            className="flex-1 bg-gray-800 text-white hover:bg-gray-700"
+            className="w-full bg-gray-800 text-white hover:bg-gray-700"
             onClick={goToEditDebts}
           >
-            Ver/Editar Mis Deudas
+            {debts.length > 0 ? 'Editar Mis Deudas' : 'Agregar Deudas'}
           </Button>
+          {debts.length > 0 && (
+            <Button
+              className="w-full bg-finflow-mint text-black font-bold hover:bg-finflow-mint/90"
+              onClick={() => setExpandedMonth(1)}
+            >
+              Ver Plan de Pagos Mensual
+            </Button>
+          )}
           <Button
-            className="flex-1 bg-finflow-mint text-black font-bold hover:bg-finflow-mint/90"
-            onClick={() => setExpandedMonth(1)}
+            className="w-full bg-red-700 text-white font-bold hover:bg-red-600"
+            onClick={handleResetPlan}
           >
-            Ver Plan de Pagos Mensual
+            Eliminar Plan de Pagos
           </Button>
         </div>
       </div>

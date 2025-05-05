@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DebtItem } from '@/types';
 import { PaymentStrategy } from '@/components/DebtAssassin/utils/debtCalculations';
@@ -14,53 +13,55 @@ export const debtService = {
     }
     
     try {
+      // Primero buscamos si existe un plan activo
       const { data: debtPlans, error: debtPlanError } = await supabase
         .from('debt_plans')
         .select('*')
-        .eq('is_active', true)
         .eq('user_id', userId)
-        .limit(1);
+        .eq('is_active', true)
+        .single();
       
-      console.log('[loadDebts] Planes recibidos:', debtPlans);
-      
-      if (debtPlanError) {
+      if (debtPlanError && debtPlanError.code !== 'PGRST116') { // PGRST116 es el código para "no se encontraron resultados"
         console.error('[loadDebts] Error al cargar el plan de deudas:', debtPlanError);
+        throw debtPlanError;
+      }
+
+      // Si no hay plan activo, retornamos null
+      if (!debtPlans) {
+        console.log('[loadDebts] No se encontró un plan activo');
         return { debtPlan: null, debts: [] };
       }
 
-      const debtPlan = debtPlans && debtPlans.length > 0 ? debtPlans[0] : null;
+      console.log('[loadDebts] Plan encontrado:', debtPlans);
 
-      if (debtPlan) {
-        // Load debts associated with the plan
-        const { data: debtsData, error: debtsError } = await supabase
-          .from('debts')
-          .select('*')
-          .eq('debt_plan_id', debtPlan.id);
-        
-        console.log('[loadDebts] Deudas recibidas:', debtsData);
-        
-        if (debtsError) {
-          console.error('[loadDebts] Error al cargar las deudas:', debtsError);
-          return { debtPlan, debts: [] };
-        }
-
-        if (debtsData && debtsData.length > 0) {
-          const mappedDebts = debtsData.map(debt => ({
-            id: debt.id,
-            name: debt.name,
-            balance: debt.balance,
-            interestRate: debt.interest_rate,
-            minimumPayment: debt.minimum_payment,
-            totalPayments: debt.total_payments
-          }));
-          
-          return { debtPlan, debts: mappedDebts };
-        } else {
-          return { debtPlan, debts: [] };
-        }
-      } else {
-        return { debtPlan: null, debts: [] };
+      // Si hay un plan, cargamos sus deudas asociadas
+      const { data: debtsData, error: debtsError } = await supabase
+        .from('debts')
+        .select('*')
+        .eq('debt_plan_id', debtPlans.id);
+      
+      if (debtsError) {
+        console.error('[loadDebts] Error al cargar las deudas:', debtsError);
+        throw debtsError;
       }
+
+      console.log('[loadDebts] Deudas encontradas:', debtsData);
+
+      // Mapeamos las deudas al formato que espera la aplicación
+      const mappedDebts = (debtsData || []).map(debt => ({
+        id: debt.id,
+        name: debt.name,
+        balance: debt.balance,
+        interestRate: debt.interest_rate,
+        minimumPayment: debt.minimum_payment,
+        totalPayments: debt.total_payments
+      }));
+      
+      return { 
+        debtPlan: debtPlans,
+        debts: mappedDebts 
+      };
+      
     } catch (error) {
       console.error('[loadDebts] Error al cargar los datos:', error);
       toast.error('Error al cargar los datos de deudas');

@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { User, Settings, LogOut, LayoutGrid, FolderTree } from 'lucide-react';
+import { User, LogOut, FolderTree } from 'lucide-react';
 import { CategoryManagementDialog } from '@/components/CategoryManagement/CategoryManagementDialog';
 
 const ProfileMenu = () => {
@@ -40,24 +40,14 @@ const ProfileMenu = () => {
         <DropdownMenuItem asChild>
           <Link to="/profile" className="flex items-center cursor-pointer">
             <User className="mr-2 h-4 w-4" />
-            <span>Perfil</span>
+            <span>Editar Perfil</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/settings" className="flex items-center cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Configuración</span>
+          <Link to="/categories" className="flex items-center cursor-pointer">
+            <FolderTree className="mr-2 h-4 w-4" />
+            <span>Administrar Categorías</span>
           </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/ui-components" className="flex items-center cursor-pointer">
-            <LayoutGrid className="mr-2 h-4 w-4" />
-            <span>Componentes UI</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
-          <FolderTree className="mr-2 h-4 w-4" />
-          <CategoryManagementDialog />
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem 

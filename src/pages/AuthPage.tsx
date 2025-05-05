@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import FinFlowIcon from '@/assets/favicon.svg';
 
 const AuthPage = () => {
   const { user } = useAuth();
@@ -29,14 +29,14 @@ const AuthPage = () => {
           password,
         });
         if (error) throw error;
-        toast.success('Check your email to confirm your account');
+        toast.success('Revisa tu email para confirmar tu cuenta');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-        toast.success('Successfully signed in');
+        toast.success('Inicio de sesión exitoso');
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -48,13 +48,16 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen bg-finflow-dark text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-finflow-card p-8 rounded-2xl">
+        <div className="flex justify-center mb-6">
+          <img src={FinFlowIcon} alt="FinFlow Icon" className="w-16 h-16" />
+        </div>
         <h1 className="text-2xl font-bold mb-6 text-center">
-          {isSignUp ? 'Create an Account' : 'Welcome Back'}
+          {isSignUp ? 'Crear una Cuenta' : 'Bienvenido de Vuelta'}
         </h1>
         
         <form onSubmit={handleAuth} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Email</label>
+            <label className="block text-sm font-medium mb-2">Correo electrónico</label>
             <Input
               type="email"
               value={email}
@@ -65,7 +68,7 @@ const AuthPage = () => {
           </div>
           
           <div>
-            <label className="block text-sm font-medium mb-2">Password</label>
+            <label className="block text-sm font-medium mb-2">Contraseña</label>
             <Input
               type="password"
               value={password}
@@ -81,20 +84,20 @@ const AuthPage = () => {
             disabled={isLoading}
           >
             {isLoading
-              ? 'Loading...'
+              ? 'Cargando...'
               : isSignUp
-              ? 'Sign Up'
-              : 'Sign In'}
+              ? 'Registrarse'
+              : 'Iniciar Sesión'}
           </Button>
         </form>
         
         <p className="mt-4 text-center text-sm">
-          {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+          {isSignUp ? '¿Ya tienes una cuenta?' : '¿No tienes una cuenta?'}{' '}
           <button
             onClick={() => setIsSignUp(!isSignUp)}
             className="text-finflow-mint hover:underline"
           >
-            {isSignUp ? 'Sign In' : 'Sign Up'}
+            {isSignUp ? 'Iniciar Sesión' : 'Registrarse'}
           </button>
         </p>
       </div>

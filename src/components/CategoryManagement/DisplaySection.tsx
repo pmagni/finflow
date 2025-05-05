@@ -17,7 +17,7 @@ export function DisplaySection({ setShowForm, onEdit }: DisplaySectionProps) {
         variant="outline"
       >
         <Plus className="h-4 w-4 mr-2" />
-        Add New Category
+        Agregar Nueva Categoría
       </Button>
       <CategoryList onEdit={onEdit} />
     </div>

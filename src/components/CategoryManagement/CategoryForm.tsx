@@ -70,7 +70,7 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
           name="transaction_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Type</FormLabel>
+              <FormLabel>Tipo</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger className="bg-gray-800 border-gray-700">
@@ -78,8 +78,8 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="expense">Expense</SelectItem>
+                  <SelectItem value="income">Ingreso</SelectItem>
+                  <SelectItem value="expense">Gasto</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -92,9 +92,9 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Category Name</FormLabel>
+              <FormLabel>Nombre Categoría</FormLabel>
               <FormControl>
-                <Input placeholder="Enter category name" {...field} />
+                <Input placeholder="Ingresa nombre de la categoría" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -132,10 +132,10 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit">
-            {initialData ? 'Update' : 'Create'} Category
+            {initialData ? 'Update' : 'Crear'} Categoría
           </Button>
         </div>
       </form>
