@@ -1,3 +1,4 @@
+
 export interface Expense {
   date: string;
   category: string;
@@ -34,4 +35,17 @@ export interface FinancialHealthScore {
     unlocked: boolean;
     description: string;
   }[];
+}
+
+// Add the missing Transaction interface
+export interface Transaction {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  category: {
+    name: string;
+    icon?: string;
+  };
+  type: 'income' | 'expense';
 }

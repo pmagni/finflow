@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   ColumnDef,
@@ -12,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import { Transaction } from '@/types';
 import { ArrowDown, ArrowUp, CalendarIcon, Copy, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,27 +26,27 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { addDays, format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 
-interface DateRange {
-  from?: Date;
-  to?: Date;
-}
-
-interface Props {
+interface TransactionsTableProps {
   transactions: Transaction[];
 }
 
-const TransactionsTable = ({ transactions }: Props) => {
-  const [sorting, setSorting] = useState([]);
-  const [columnFilters, setColumnFilters] = useState([]);
+// Fix the default export
+const TransactionsTable = ({ transactions = [] }: TransactionsTableProps) => {
+  const [sorting, setSorting] = useState<any[]>([]);
+  const [columnFilters, setColumnFilters] = useState<any[]>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState<DateRange>({ from: undefined, to: undefined });
+  const [dateFilter, setDateFilter] = useState<{
+    from?: Date;
+    to?: Date;
+  }>({ from: undefined, to: undefined });
 
   const columns: ColumnDef<Transaction>[] = [
     {
@@ -185,7 +186,7 @@ const TransactionsTable = ({ transactions }: Props) => {
 
   const handleDateChange = (range: { from?: Date, to?: Date }) => {
     setDateFilter({ 
-      from: range.from || new Date(),
+      from: range.from || undefined,
       to: range.to 
     });
   };
@@ -281,7 +282,7 @@ const TransactionsTable = ({ transactions }: Props) => {
         </Table>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default TransactionsTable;
