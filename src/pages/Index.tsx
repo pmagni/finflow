@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import FinancialHealth from '@/components/ExpenseOverview/FinancialHealth';
 import ExpenseChart from '@/components/ExpenseOverview/ExpenseChart';
@@ -5,10 +6,32 @@ import TransactionList from '@/components/ExpenseOverview/TransactionList';
 import { TransactionForm } from '@/components/ExpenseOverview/TransactionForm';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/formatters';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
   const [balance, setBalance] = useState<number>(0);
+  const [userName, setUserName] = useState<string>('');
+  const { user } = useAuth();
+
+  useEffect(() => {
+    // Fetch user profile data to get name
+    const fetchUserProfile = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_name')
+          .eq('id', user.id)
+          .single();
+          
+        if (data && !error) {
+          setUserName(data.user_name || '');
+        }
+      }
+    };
+    
+    fetchUserProfile();
+  }, [user]);
 
   useEffect(() => {
     const calculateBalance = async () => {
@@ -51,6 +74,14 @@ const Index = () => {
 
   return (
     <div className="max-w-md mx-auto space-y-6">
+      {userName && (
+        <div className="mb-2 mt-4">
+          <h2 className="text-xl font-medium text-finflow-mint">
+            Hola {userName}, bienvenido a FinFlow
+          </h2>
+        </div>
+      )}
+      
       <div className="mb-6">
         <h2 className="text-gray-400 text-sm">Balance del Mes</h2>
         <h1 className="text-4xl font-bold">{formatCurrency(balance)}</h1>
