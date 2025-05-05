@@ -28,6 +28,7 @@ export const TransactionsEditDialog = ({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       transaction={transaction}
+      isEditing={true}
     />
   );
 };

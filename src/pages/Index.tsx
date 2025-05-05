@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import FinancialHealth from '@/components/ExpenseOverview/FinancialHealth';
 import ExpenseChart from '@/components/ExpenseOverview/ExpenseChart';
@@ -77,7 +76,7 @@ const Index = () => {
       {userName && (
         <div className="mb-2 mt-4">
           <h2 className="text-xl font-medium text-finflow-mint">
-            Hola {userName}, bienvenido a FinFlow
+            Hola {userName} !
           </h2>
         </div>
       )}

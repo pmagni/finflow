@@ -1,4 +1,3 @@
-
 import { TableBody as ShadcnTableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Edit, Trash2 } from 'lucide-react';
 import { formatCurrency, formatShortDate } from '@/utils/formatters';
@@ -23,7 +22,7 @@ export const TransactionsTableBody = ({ transactions, onEdit, onDelete }: TableB
       ) : (
         transactions.map((transaction) => (
           <TableRow key={transaction.id}>
-            <TableCell>{formatShortDate(transaction.date)}</TableCell>
+            <TableCell>{formatShortDate(transaction.transaction_date || '')}</TableCell>
             <TableCell>{transaction.description}</TableCell>
             <TableCell>
               {transaction.category && (

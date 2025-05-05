@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { PieChart, Pie, ResponsiveContainer, Cell, Sector } from 'recharts';
+import { PieChart, Pie, ResponsiveContainer, Cell, Sector, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid } from 'recharts';
 import { getExpensesByMonth } from '@/services/expenseService';
 import { formatCurrency } from '@/utils/formatters';
 import { Button } from '@/components/ui/button';
@@ -43,6 +42,7 @@ const ExpenseChart = () => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [updateKey, setUpdateKey] = useState(0);
   const monthsPerPage = 1;
+  const [view, setView] = useState<'line' | 'pie'>('pie');
 
   // Enhanced color palette with better contrast and visual appeal
   const colors: { [key: string]: string } = {
@@ -230,6 +230,21 @@ const ExpenseChart = () => {
     }
   }, [activeIndex, currentMonthData.data, mainCategory]);
 
+  // Datos para el gráfico de línea: [{ month: 'Abril 2024', total: 1200 }, ...]
+  const lineChartData = useMemo(() => {
+    return Object.entries(monthlyExpenses)
+      .map(([month, data]) => {
+        // Calcular el total de gastos para el mes
+        const total = Object.values(data).reduce((sum, value) => sum + value, 0);
+        return {
+          month,
+          total: Math.abs(total) // Asegurar que el total sea positivo
+        };
+      })
+      .filter(item => item.total > 0) // Filtrar meses sin gastos
+      .reverse(); // Mostrar de más antiguo a más reciente
+  }, [monthlyExpenses, updateKey]);
+
   if (isLoading) {
     return (
       <div className="bg-finflow-card rounded-2xl p-5 mb-5 animate-fade-in">
@@ -246,95 +261,126 @@ const ExpenseChart = () => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold">Mis Gastos</h2>
       </div>
-
-      <div className="flex items-center justify-center mb-6">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="outline" 
-              className="min-w-40 flex items-center justify-between gap-2 bg-gray-800 hover:bg-gray-700 border-gray-700"
-            >
-              <Calendar className="h-4 w-4" />
-              <span className="flex-1">{currentMonthData.month || 'Seleccionar mes'}</span>
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="w-40 bg-gray-800 border-gray-700">
-            {monthsList.map(([month], index) => (
-              <DropdownMenuItem
-                key={month}
-                className="justify-center hover:bg-gray-700"
-                onClick={() => setCurrentPage(index)}
-              >
-                {month}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Botones de cambio de vista */}
+      <div className="flex justify-center gap-2 mb-4">
+        <button
+          className={`whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2 min-w-40 flex items-center justify-center gap-2 border transition-colors ${view === 'line' ? 'bg-gray-700 text-white border-finflow-mint' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
+          onClick={() => setView('line')}
+        >
+          Evolución mensual
+        </button>
+        <button
+          className={`whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2 min-w-40 flex items-center justify-center gap-2 border transition-colors ${view === 'pie' ? 'bg-gray-700 text-white border-finflow-mint' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
+          onClick={() => setView('pie')}
+        >
+          Por categoría
+        </button>
       </div>
-      
+      {/* Selector de mes solo para la vista de torta */}
+      {view === 'pie' && (
+        <div className="flex items-center justify-center mb-6">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="min-w-40 flex items-center justify-between gap-2 bg-gray-800 hover:bg-gray-700 border-gray-700"
+              >
+                <Calendar className="h-4 w-4" />
+                <span className="flex-1">{currentMonthData.month || 'Seleccionar mes'}</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-40 bg-gray-800 border-gray-700">
+              {monthsList.map(([month], index) => (
+                <DropdownMenuItem
+                  key={month}
+                  className="justify-center hover:bg-gray-700"
+                  onClick={() => setCurrentPage(index)}
+                >
+                  {month}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+      {/* Gráfico principal */}
       <div className="flex flex-col items-center">
         <div className="h-96 w-full relative">
-          {currentMonthData.data.length > 0 ? (
-            <>
-              <div className="w-full h-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={currentMonthData.data}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={94}
-                      outerRadius={140}
-                      paddingAngle={2}
-                      dataKey="value"
-                      labelLine={false}
-                      onClick={onPieClick}
-                      activeIndex={activeIndex}
-                      activeShape={renderActiveShape}
-                      stroke="#1A1A1A"
-                      strokeWidth={1}
-                    >
-                      {currentMonthData.data.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={colors[entry.name.toLowerCase()] || defaultColor}
-                          className="cursor-pointer hover:opacity-90 transition-opacity filter drop-shadow-md"
-                          style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.35))' }}
-                        />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                <div className="text-4xl font-bold bg-gradient-to-r from-gray-100 to-gray-300 text-transparent bg-clip-text">
-                  {displayData.percentage}%
+          {view === 'pie' ? (
+            currentMonthData.data.length > 0 ? (
+              <>
+                <div className="w-full h-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={currentMonthData.data}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={94}
+                        outerRadius={140}
+                        paddingAngle={2}
+                        dataKey="value"
+                        labelLine={false}
+                        onClick={onPieClick}
+                        activeIndex={activeIndex}
+                        activeShape={renderActiveShape}
+                        stroke="#1A1A1A"
+                        strokeWidth={1}
+                      >
+                        {currentMonthData.data.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={colors[entry.name.toLowerCase()] || defaultColor}
+                            className="cursor-pointer hover:opacity-90 transition-opacity filter drop-shadow-md"
+                            style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.35))' }}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-                <div className="text-sm text-gray-400 capitalize">
-                  {displayData.name}
+                <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                  <div className="text-4xl font-bold bg-gradient-to-r from-gray-100 to-gray-300 text-transparent bg-clip-text">
+                    {displayData.percentage}%
+                  </div>
+                  <div className="text-sm text-gray-400 capitalize">
+                    {displayData.name}
+                  </div>
                 </div>
-              </div>
-            </>
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
+              </>
+            ) : (
+              <div className="h-full flex items-center justify-center">
                 <PieChartIcon size={32} className="mx-auto mb-2 text-gray-500" />
                 <p className="text-gray-400">No hay datos de gastos para este mes</p>
               </div>
-            </div>
+            )
+          ) : (
+            // Vista de gráfico de línea
+            lineChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={lineChartData} margin={{ top: 30, right: 30, left: 10, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis dataKey="month" tick={{ fill: '#bdbdbd', fontSize: 12 }} />
+                  <RechartsTooltip formatter={formatCurrency} labelStyle={{ color: '#fff' }} contentStyle={{ background: '#222', border: '1px solid #444' }} />
+                  <Line type="monotone" dataKey="total" stroke="#7EEBC6" strokeWidth={3} dot={{ r: 5, fill: '#7EEBC6', stroke: '#222', strokeWidth: 2 }} activeDot={{ r: 7 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-gray-400">No hay datos suficientes para mostrar la evolución mensual</p>
+              </div>
+            )
           )}
         </div>
-        
-        {currentMonthData.data.length > 0 && (
+        {/* Leyenda de categorías solo para la vista de torta */}
+        {view === 'pie' && currentMonthData.data.length > 0 && (
           <div className="w-full max-w-md grid grid-cols-2 gap-4 mt-6">
             {currentMonthData.data
               .map((category, index) => (
                 <div 
                   key={category.name} 
-                  className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg transition-colors ${
-                    activeIndex === index ? 'bg-gray-800' : 'hover:bg-gray-800/50'
-                  }`}
+                  className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg transition-colors ${activeIndex === index ? 'bg-gray-800' : 'hover:bg-gray-800/50'}`}
                   onClick={() => onPieClick(null, index)}
                 >
                   <div

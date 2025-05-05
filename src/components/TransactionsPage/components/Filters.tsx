@@ -1,4 +1,3 @@
-
 import { Search, CircleSlash, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -64,7 +63,7 @@ export const TransactionsFilters = ({
           <SelectValue placeholder="Categoría" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Todas las categorías</SelectItem>
+          <SelectItem value="all">Todas las categorías</SelectItem>
           {categories.map((category) => (
             <SelectItem key={category.id} value={category.name}>
               {category.name}

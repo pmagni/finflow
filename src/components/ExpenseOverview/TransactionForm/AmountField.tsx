@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FormField,
   FormItem,
@@ -8,26 +7,32 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useFormContext } from "react-hook-form";
 
-const formatNumber = (value: string): string => {
-  // Eliminar cualquier caracter que no sea número
-  const numbers = value.replace(/\D/g, '');
-  
-  // Si no hay números, retornar vacío
+const formatNumber = (value: string | number): string => {
+  const numbers = value.toString().replace(/\D/g, '');
   if (!numbers) return '';
-  
-  // Convertir a número y formatear con puntos
-  const formatted = Number(numbers).toLocaleString('es-CL');
-  
-  return formatted;
+  return Number(numbers).toLocaleString('es-CL');
 };
 
 const unformatNumber = (value: string): string => {
-  // Eliminar todos los puntos y retornar solo números
   return value.replace(/\./g, '');
 };
 
 export function AmountField() {
+  const { setValue, watch } = useFormContext();
+  const formAmount = watch('amount');
+  const [displayValue, setDisplayValue] = useState('');
+
+  // Sincronizar el valor visual cuando cambia el valor real (por ejemplo, al editar)
+  useEffect(() => {
+    if (formAmount !== undefined && formAmount !== null && formAmount !== '') {
+      setDisplayValue(formatNumber(formAmount));
+    } else {
+      setDisplayValue('');
+    }
+  }, [formAmount]);
+
   return (
     <FormField
       name="amount"
@@ -40,21 +45,15 @@ export function AmountField() {
               <Input
                 type="text"
                 inputMode="numeric"
-                pattern="[0-9]*"
                 placeholder="Ingrese monto en pesos chilenos"
                 className="bg-gray-800 border-gray-700 pl-7"
-                value={formatNumber(field.value?.toString() || '')}
+                value={displayValue}
                 onChange={(e) => {
-                  const unformatted = unformatNumber(e.target.value);
-                  field.onChange(unformatted);
+                  const raw = unformatNumber(e.target.value);
+                  setDisplayValue(formatNumber(raw));
+                  setValue('amount', raw ? Number(raw) : undefined, { shouldValidate: true });
                 }}
-                onBlur={(e) => {
-                  field.onBlur();
-                  const value = unformatNumber(e.target.value);
-                  if (value && !isNaN(Number(value))) {
-                    field.onChange(value);
-                  }
-                }}
+                onBlur={field.onBlur}
               />
             </div>
           </FormControl>

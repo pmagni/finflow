@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { getCoreRowModel } from '@tanstack/react-table';
 import { Transaction } from '@/types';
 import { DateRange } from 'react-day-picker';
 import { Table } from "@/components/ui/table";
+import { AlertCircle } from 'lucide-react';
 import TransactionsTableHeader from './components/TableHeader';
 import TransactionsTableBody from './components/TableBody';
 import TransactionsFilters from './components/Filters';
@@ -12,15 +12,16 @@ import TransactionsDeleteDialog from './components/DeleteDialog';
 
 interface TransactionsTableProps {
   transactions: Transaction[];
+  error?: string;
 }
 
-const TransactionsTable = ({ transactions = [] }: TransactionsTableProps) => {
+const TransactionsTable = ({ transactions = [], error }: TransactionsTableProps) => {
   const [sorting, setSorting] = useState<{ field: 'date' | 'amount' | 'description' | 'category'; direction: 'asc' | 'desc' }>({
     field: 'date',
     direction: 'desc'
   });
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [dateFilter, setDateFilter] = useState<DateRange | undefined>(undefined);
   
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
@@ -39,13 +40,13 @@ const TransactionsTable = ({ transactions = [] }: TransactionsTableProps) => {
     }
     
     // For date, amount, description
-    const aValue = a[field];
-    const bValue = b[field];
+    const aValue = field === 'date' ? a.transaction_date : a[field];
+    const bValue = field === 'date' ? b.transaction_date : b[field];
     
     if (field === 'date') {
       return sorting.direction === 'asc' 
-        ? new Date(aValue).getTime() - new Date(bValue).getTime()
-        : new Date(bValue).getTime() - new Date(aValue).getTime();
+        ? new Date(aValue || '').getTime() - new Date(bValue || '').getTime()
+        : new Date(bValue || '').getTime() - new Date(aValue || '').getTime();
     }
     
     if (field === 'amount') {
@@ -68,13 +69,13 @@ const TransactionsTable = ({ transactions = [] }: TransactionsTableProps) => {
       transaction.category?.name.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Category filter
-    const categoryMatch = selectedCategory === "" || 
+    const categoryMatch = selectedCategory === "all" || 
       transaction.category?.name === selectedCategory;
     
     // Date filter
     let dateMatch = true;
     if (dateFilter?.from) {
-      const transactionDate = new Date(transaction.date);
+      const transactionDate = new Date(transaction.transaction_date || '');
       dateMatch = transactionDate >= dateFilter.from;
       
       if (dateMatch && dateFilter.to) {
@@ -108,9 +109,18 @@ const TransactionsTable = ({ transactions = [] }: TransactionsTableProps) => {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setSelectedCategory("");
+    setSelectedCategory("all");
     setDateFilter(undefined);
   };
+
+  if (error) {
+    return (
+      <div className="p-4 rounded-lg bg-red-900/50 border border-red-800 flex items-center gap-2">
+        <AlertCircle className="h-5 w-5 text-red-400" />
+        <p className="text-red-200">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

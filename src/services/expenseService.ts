@@ -17,6 +17,9 @@ export async function getExpensesByMonth() {
     const monthlyExpenses: Record<string, Record<string, number>> = {};
     
     transactions?.forEach(transaction => {
+      // Verificar que sea una transacción de gasto y que el monto sea válido
+      if (transaction.type !== 'expense' || !transaction.amount) return;
+      
       const dateToUse = transaction.transaction_date || transaction.created_at;
       const date = new Date(dateToUse || '');
       // Usar el formato es-CL para mantener consistencia con el resto de la app
@@ -34,7 +37,9 @@ export async function getExpensesByMonth() {
         monthlyExpenses[key][categoryName] = 0;
       }
       
-      monthlyExpenses[key][categoryName] += Number(transaction.amount || 0);
+      // Asegurar que el monto sea positivo
+      const amount = Math.abs(Number(transaction.amount));
+      monthlyExpenses[key][categoryName] += amount;
     });
 
     // Ordenar los meses de más reciente a más antiguo

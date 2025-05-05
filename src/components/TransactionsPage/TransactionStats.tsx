@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { BarChart3, PieChart, DollarSign } from 'lucide-react';
+import { BarChart3, PieChart, DollarSign, AlertCircle } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -30,6 +30,7 @@ interface TransactionSummary {
 
 export function TransactionStats() {
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<TransactionSummary>({
     totalTransactions: 0,
     totalAmount: 0,
@@ -41,6 +42,7 @@ export function TransactionStats() {
     async function fetchTransactions() {
       try {
         setIsLoading(true);
+        setError(null);
         const { data: transactions, error } = await supabase
           .from('transactions')
           .select(`
@@ -51,6 +53,10 @@ export function TransactionStats() {
 
         if (error) {
           throw error;
+        }
+
+        if (!transactions) {
+          throw new Error('No se pudieron obtener las transacciones');
         }
 
         // Procesar datos para el resumen
@@ -65,13 +71,15 @@ export function TransactionStats() {
           // Total
           newSummary.totalAmount += Number(transaction.amount);
 
-          // Por categoría
-          const categoryName = transaction.category?.name || 'Sin categoría';
-          if (!newSummary.categorySummary[categoryName]) {
-            newSummary.categorySummary[categoryName] = { count: 0, total: 0 };
+          // Por categoría (solo gastos)
+          if (transaction.type === 'expense') {
+            const categoryName = transaction.category?.name || 'Sin categoría';
+            if (!newSummary.categorySummary[categoryName]) {
+              newSummary.categorySummary[categoryName] = { count: 0, total: 0 };
+            }
+            newSummary.categorySummary[categoryName].count += 1;
+            newSummary.categorySummary[categoryName].total += Number(transaction.amount);
           }
-          newSummary.categorySummary[categoryName].count += 1;
-          newSummary.categorySummary[categoryName].total += Number(transaction.amount);
 
           // Por mes
           const date = new Date(transaction.transaction_date || transaction.created_at);
@@ -86,6 +94,7 @@ export function TransactionStats() {
         setSummary(newSummary);
       } catch (error) {
         console.error('Error fetching transactions:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar las transacciones');
       } finally {
         setIsLoading(false);
       }
@@ -103,6 +112,15 @@ export function TransactionStats() {
   const recentMonths = Object.entries(summary.monthSummary)
     .sort((a, b) => b[0].localeCompare(a[0]))
     .slice(0, 4);
+
+  if (error) {
+    return (
+      <div className="p-4 rounded-lg bg-red-900/50 border border-red-800 flex items-center gap-2">
+        <AlertCircle className="h-5 w-5 text-red-400" />
+        <p className="text-red-200">{error}</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -177,7 +195,7 @@ export function TransactionStats() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="bg-gray-800 border-gray-700">
           <CardHeader>
-            <CardTitle>Top Categorías</CardTitle>
+            <CardTitle>Top Gastos por Categoría</CardTitle>
             <CardDescription>Categorías con mayor gasto</CardDescription>
           </CardHeader>
           <CardContent>
