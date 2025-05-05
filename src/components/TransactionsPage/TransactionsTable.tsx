@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   ColumnDef,
@@ -43,10 +42,7 @@ const TransactionsTable = ({ transactions = [] }: TransactionsTableProps) => {
   const [sorting, setSorting] = useState<any[]>([]);
   const [columnFilters, setColumnFilters] = useState<any[]>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState<{
-    from?: Date;
-    to?: Date;
-  }>({ from: undefined, to: undefined });
+  const [dateFilter, setDateFilter] = useState<DateRange | undefined>(undefined);
 
   const columns: ColumnDef<Transaction>[] = [
     {
@@ -184,11 +180,8 @@ const TransactionsTable = ({ transactions = [] }: TransactionsTableProps) => {
     },
   });
 
-  const handleDateChange = (range: { from?: Date, to?: Date }) => {
-    setDateFilter({ 
-      from: range.from || undefined,
-      to: range.to 
-    });
+  const handleDateChange = (range: DateRange | undefined) => {
+    setDateFilter(range);
   };
 
   return (
@@ -233,6 +226,7 @@ const TransactionsTable = ({ transactions = [] }: TransactionsTableProps) => {
                 date > addDays(new Date(), 0) || date < addDays(new Date(), -365)
               }
               numberOfMonths={2}
+              className={cn("p-3 pointer-events-auto")}
             />
           </PopoverContent>
         </Popover>
