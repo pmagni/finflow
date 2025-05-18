@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { HomeIcon, BanknoteIcon, BrainCircuitIcon, User, LogOut, FolderTree } from 'lucide-react';
@@ -82,7 +83,7 @@ const Sidebar = ({ className = '' }) => {
           })}
         </nav>
       </div>
-      <div className="w-full flex flex-col items-center mb-2">
+      <div className="w-full flex flex-col items-center mb-2 hidden md:flex">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="w-12 h-12 rounded-full bg-finflow-card hover:bg-gray-800 transition-colors flex items-center justify-center p-0">
