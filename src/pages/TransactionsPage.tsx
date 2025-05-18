@@ -56,7 +56,7 @@ const TransactionsPage = () => {
   }, []);
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-7xl">
+    <div className="container mx-auto py-6 px-4 max-w-5xl">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Transacciones</h1>
         <Button 

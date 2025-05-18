@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { HomeIcon, BanknoteIcon, BrainCircuitIcon } from 'lucide-react';
 
-const Navigation = () => {
+const Navigation = ({ className = '' }) => {
   const location = useLocation();
   
   const menuItems = [
@@ -25,7 +24,7 @@ const Navigation = () => {
   ];
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-16 bg-finflow-card border-t border-gray-800 flex justify-around items-center p-3 z-10">
+    <div className={`fixed bottom-0 left-0 right-0 h-16 bg-finflow-card border-t border-gray-800 flex justify-around items-center p-3 z-10 ${className}`}>
       {/* IMPORTANTE: Las páginas con scroll deben tener un padding-bottom de al menos 4rem (64px) 
           para evitar que el contenido quede oculto detrás de la navegación */}
       {menuItems.map((item) => {

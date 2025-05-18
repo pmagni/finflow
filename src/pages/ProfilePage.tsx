@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,7 +74,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="container max-w-2xl py-8">
+    <div className="container max-w-2xl mx-auto py-8 px-4 md:px-8">
       <Card className="bg-finflow-card border-gray-800">
         <CardHeader>
           <CardTitle className="text-2xl">Editar Perfil</CardTitle>

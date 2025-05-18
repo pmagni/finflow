@@ -138,46 +138,50 @@ const DebtPage = () => {
   // Si no hay plan o el usuario quiere crear uno nuevo
   if (showCalculator) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-white">Plan de Deudas</h1>
-          {paymentPlan.months > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => setShowCalculator(false)}
-            >
-              Ver Plan Actual
-            </Button>
-          )}
+      <div className="container max-w-4xl mx-auto p-4 md:p-8">
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-white">Plan de Deudas</h1>
+            {paymentPlan.months > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setShowCalculator(false)}
+              >
+                Ver Plan Actual
+              </Button>
+            )}
+          </div>
+          <DebtCalculator />
         </div>
-        <DebtCalculator />
       </div>
     );
   }
 
   // Vista del plan existente
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white">Plan de Deudas</h1>
-        <Button
-          variant="outline"
-          onClick={() => setShowCalculator(true)}
-        >
-          Crear Nuevo Plan
-        </Button>
-      </div>
+    <div className="container max-w-4xl mx-auto p-4 md:p-8">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-white">Plan de Deudas</h1>
+          <Button
+            variant="outline"
+            onClick={() => setShowCalculator(true)}
+          >
+            Crear Nuevo Plan
+          </Button>
+        </div>
 
-      <PaymentPlanDisplay
-        paymentPlan={paymentPlan}
-        monthlyBudget={(monthlyIncome * budgetPercentage) / 100}
-        budgetPercentage={budgetPercentage}
-        setBudgetPercentage={setBudgetPercentage}
-        debts={debts}
-        expandedMonth={expandedMonth}
-        setExpandedMonth={setExpandedMonth}
-        goToEditDebts={() => setShowCalculator(true)}
-      />
+        <PaymentPlanDisplay
+          paymentPlan={paymentPlan}
+          monthlyBudget={(monthlyIncome * budgetPercentage) / 100}
+          budgetPercentage={budgetPercentage}
+          setBudgetPercentage={setBudgetPercentage}
+          debts={debts}
+          expandedMonth={expandedMonth}
+          setExpandedMonth={setExpandedMonth}
+          goToEditDebts={() => setShowCalculator(true)}
+        />
+      </div>
     </div>
   );
 };

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus, User, LogOut, FolderTree } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { HomeIcon, BanknoteIcon, BrainCircuitIcon, User, LogOut, FolderTree } from 'lucide-react';
 import FinFlowIcon from '@/assets/favicon.svg';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { Link } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,11 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface PageHeaderProps {
-  onAddTransaction: () => void;
-}
+const menuItems = [
+  { label: 'Home', path: '/', icon: <HomeIcon size={22} strokeWidth={1.5} /> },
+  { label: 'Mis Deudas', path: '/debt', icon: <BanknoteIcon size={22} strokeWidth={1.5} /> },
+  { label: 'Asistente Fin', path: '/assistant', icon: <BrainCircuitIcon size={22} strokeWidth={1.5} /> },
+];
 
-const PageHeader = ({ onAddTransaction }: PageHeaderProps) => {
+const Sidebar = ({ className = '' }) => {
+  const location = useLocation();
   const { user } = useAuth();
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -27,6 +29,7 @@ const PageHeader = ({ onAddTransaction }: PageHeaderProps) => {
   useEffect(() => {
     if (user) {
       setUserEmail(user.email || '');
+      // Buscar el nombre en el perfil
       const fetchUserProfile = async () => {
         const { data, error } = await supabase
           .from('profiles')
@@ -41,6 +44,7 @@ const PageHeader = ({ onAddTransaction }: PageHeaderProps) => {
     }
   }, [user]);
 
+  // Función para obtener iniciales
   const getInitials = () => {
     if (userName) {
       const parts = userName.trim().split(' ');
@@ -52,33 +56,42 @@ const PageHeader = ({ onAddTransaction }: PageHeaderProps) => {
   };
 
   return (
-    <header className="flex justify-between items-center py-4">
-      <div className="flex items-center gap-2">
-        <img src={FinFlowIcon} alt="FinFlow Icon" className="w-6 h-6" />
-        <h1 className="text-2xl font-bold">FinFlow</h1>
+    <aside className={`h-screen w-64 bg-finflow-card border-r border-gray-800 flex flex-col items-center py-8 justify-between ${className}`}>
+      <div className="w-full">
+        <div className="flex items-center gap-2 mb-10">
+          <img src={FinFlowIcon} alt="FinFlow Icon" className="w-8 h-8" />
+          <span className="text-2xl font-bold">FinFlow</span>
+        </div>
+        <nav className="flex flex-col gap-4 w-full">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                to={item.path}
+                key={item.path}
+                className={`flex items-center gap-3 px-6 py-3 rounded-lg transition-all w-full font-medium text-lg ${
+                  isActive
+                    ? 'bg-gray-800 text-finflow-mint'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                }`}
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-      <div className="flex items-center gap-4">
-        <Button
-          onClick={onAddTransaction}
-          className="bg-finflow-mint hover:bg-finflow-mint-dark text-black"
-          size="sm"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline ml-1">Agregar Transacción</span>
-        </Button>
-        {/* Avatar con menú de usuario, visible en todos los tamaños */}
+      <div className="w-full flex flex-col items-center mb-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className="w-10 h-10 rounded-full bg-finflow-card hover:bg-gray-800 transition-colors p-0"
-            >
+            <button className="w-12 h-12 rounded-full bg-finflow-card hover:bg-gray-800 transition-colors flex items-center justify-center p-0">
               <Avatar>
                 <AvatarFallback className="bg-finflow-mint text-black font-bold">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
-            </Button>
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
@@ -110,9 +123,10 @@ const PageHeader = ({ onAddTransaction }: PageHeaderProps) => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <span className="mt-2 text-sm font-medium text-gray-200 truncate max-w-[140px]">{userName || userEmail}</span>
       </div>
-    </header>
+    </aside>
   );
 };
 
-export default PageHeader;
+export default Sidebar; 

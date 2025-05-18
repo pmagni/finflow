@@ -72,7 +72,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="max-w-md mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       {userName && (
         <div className="mb-2 mt-4">
           <h2 className="text-xl font-medium text-finflow-mint">
@@ -86,8 +86,14 @@ const Index = () => {
         <h1 className="text-4xl font-bold">{formatCurrency(balance)}</h1>
       </div>
       
-      <ExpenseChart />
-      <TransactionList />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <ExpenseChart />
+        </div>
+        <div>
+          <TransactionList />
+        </div>
+      </div>
       <FinancialHealth />
 
       <TransactionForm 
