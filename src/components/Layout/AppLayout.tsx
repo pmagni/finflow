@@ -18,7 +18,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <div className="min-h-screen bg-finflow-background text-white flex">
       <Sidebar className="hidden md:flex" />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col md:ml-64">
         <div className="container mx-auto px-4 flex-1 flex flex-col">
           <PageHeader onAddTransaction={handleAddTransaction} />
           <main className="pb-20 flex-1 flex flex-col">

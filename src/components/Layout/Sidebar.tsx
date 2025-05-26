@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { HomeIcon, BanknoteIcon, BrainCircuitIcon, User, LogOut, FolderTree } from 'lucide-react';
@@ -17,6 +16,7 @@ import {
 
 const menuItems = [
   { label: 'Home', path: '/', icon: <HomeIcon size={22} strokeWidth={1.5} /> },
+  { label: 'Mis Ahorros', path: '/savings', icon: <BanknoteIcon size={22} strokeWidth={1.5} /> },
   { label: 'Mis Deudas', path: '/debt', icon: <BanknoteIcon size={22} strokeWidth={1.5} /> },
   { label: 'Asistente Fin', path: '/assistant', icon: <BrainCircuitIcon size={22} strokeWidth={1.5} /> },
 ];
@@ -57,9 +57,9 @@ const Sidebar = ({ className = '' }) => {
   };
 
   return (
-    <aside className={`h-screen w-64 bg-finflow-card border-r border-gray-800 flex flex-col items-center py-8 justify-between ${className}`}>
+    <aside className={`fixed top-0 left-0 h-screen w-64 bg-finflow-card border-r border-gray-800 flex flex-col items-center py-8 justify-between hidden md:flex ${className}`}>
       <div className="w-full">
-        <div className="flex items-center gap-2 mb-10">
+        <div className="flex items-center gap-2 mb-10 px-6">
           <img src={FinFlowIcon} alt="FinFlow Icon" className="w-8 h-8" />
           <span className="text-2xl font-bold">FinFlow</span>
         </div>

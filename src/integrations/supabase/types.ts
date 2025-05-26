@@ -12,6 +12,7 @@ export type Database = {
       categories: {
         Row: {
           created_at: string
+          expense_type: string | null
           icon: string
           id: string
           name: string
@@ -21,6 +22,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          expense_type?: string | null
           icon?: string
           id?: string
           name: string
@@ -30,6 +32,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          expense_type?: string | null
           icon?: string
           id?: string
           name?: string
@@ -160,6 +163,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      goals: {
+        Row: {
+          completed: boolean
+          created_at: string
+          current_amount: number
+          id: string
+          monthly_contribution: number
+          months_to_achieve: number
+          name: string
+          progress: number
+          target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          current_amount?: number
+          id?: string
+          monthly_contribution: number
+          months_to_achieve: number
+          name: string
+          progress?: number
+          target: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          current_amount?: number
+          id?: string
+          monthly_contribution?: number
+          months_to_achieve?: number
+          name?: string
+          progress?: number
+          target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      monthly_budgets: {
+        Row: {
+          auto_generated: boolean
+          created_at: string | null
+          debt_payments: number
+          fixed_expenses: Json
+          id: string
+          month: string
+          savings_goal: number
+          total_income: number
+          user_id: string | null
+          variable_budget: Json
+        }
+        Insert: {
+          auto_generated?: boolean
+          created_at?: string | null
+          debt_payments: number
+          fixed_expenses: Json
+          id?: string
+          month: string
+          savings_goal: number
+          total_income: number
+          user_id?: string | null
+          variable_budget: Json
+        }
+        Update: {
+          auto_generated?: boolean
+          created_at?: string | null
+          debt_payments?: number
+          fixed_expenses?: Json
+          id?: string
+          month?: string
+          savings_goal?: number
+          total_income?: number
+          user_id?: string | null
+          variable_budget?: Json
+        }
+        Relationships: []
       }
       payment_history: {
         Row: {

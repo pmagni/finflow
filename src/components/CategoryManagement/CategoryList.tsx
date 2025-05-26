@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { getCategories, deleteCategory } from '@/services/categoryService';
 import { Button } from '@/components/ui/button';
@@ -6,17 +5,29 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { getCategoryIcon } from '@/utils/categoryIcons';
 import { Badge } from '@/components/ui/badge';
 
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  transaction_type: 'income' | 'expense';
+  expense_type?: 'fixed' | 'variable';
+}
+
 interface CategoryListProps {
-  onEdit: (category: any) => void;
+  onEdit: (category: Category) => void;
 }
 
 export function CategoryList({ onEdit }: CategoryListProps) {
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
       const data = await getCategories();
-      setCategories(data);
+      const typedData = data.map(cat => ({
+        ...cat,
+        transaction_type: cat.transaction_type as 'income' | 'expense'
+      }));
+      setCategories(typedData);
     };
 
     fetchCategories();
@@ -35,7 +46,7 @@ export function CategoryList({ onEdit }: CategoryListProps) {
 
   return (
     <div className="space-y-2">
-      {categories.map((category: any) => {
+      {categories.map((category: Category) => {
         const Icon = getCategoryIcon(category.icon);
         return (
           <div
@@ -48,9 +59,16 @@ export function CategoryList({ onEdit }: CategoryListProps) {
               </div>
               <div className="flex flex-col">
                 <span>{category.name}</span>
-                <Badge variant={category.transaction_type === 'income' ? 'default' : 'secondary'}>
-                  {category.transaction_type}
-                </Badge>
+                <div className="flex gap-2">
+                  <Badge variant={category.transaction_type === 'income' ? 'default' : 'secondary'}>
+                    {category.transaction_type === 'income' ? 'Ingreso' : 'Gasto'}
+                  </Badge>
+                  {category.transaction_type === 'expense' && category.expense_type && (
+                    <Badge variant="outline">
+                      {category.expense_type === 'fixed' ? 'Fijo' : 'Variable'}
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex gap-2">

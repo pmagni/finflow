@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -7,6 +6,7 @@ interface Category {
   name: string;
   icon: string;
   transaction_type: 'income' | 'expense';
+  expense_type?: 'fixed' | 'variable';
 }
 
 export async function getCategories() {
@@ -23,7 +23,7 @@ export async function getCategories() {
   return data;
 }
 
-export async function createCategory({ name, icon, transaction_type }: Omit<Category, 'id'>) {
+export async function createCategory({ name, icon, transaction_type, expense_type }: Omit<Category, 'id'>) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -35,7 +35,7 @@ export async function createCategory({ name, icon, transaction_type }: Omit<Cate
 
   const { data, error } = await supabase
     .from('categories')
-    .insert({ name, icon, transaction_type, user_id: user.id })
+    .insert({ name, icon, transaction_type, expense_type, user_id: user.id })
     .select()
     .single();
 
@@ -48,10 +48,10 @@ export async function createCategory({ name, icon, transaction_type }: Omit<Cate
   return data;
 }
 
-export async function updateCategory({ id, name, icon, transaction_type }: Category) {
+export async function updateCategory({ id, name, icon, transaction_type, expense_type }: Category) {
   const { error } = await supabase
     .from('categories')
-    .update({ name, icon, transaction_type })
+    .update({ name, icon, transaction_type, expense_type })
     .eq('id', id);
 
   if (error) {

@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import AppLayout from "@/components/Layout/AppLayout";
@@ -13,6 +12,8 @@ import SettingsPage from "./pages/SettingsPage";
 import { TavilySearchPage } from "./pages/TavilySearchPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import ProfilePage from "./pages/ProfilePage";
+import PlandeAhorro from './components/PlandeAhorro';
+import BudgetPage from './pages/BudgetPage';
 
 const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -103,6 +104,26 @@ const AppRoutes = () => (
         <RequireAuth>
           <AppLayout>
             <TavilySearchPage />
+          </AppLayout>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/savings"
+      element={
+        <RequireAuth>
+          <AppLayout>
+            <PlandeAhorro />
+          </AppLayout>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/budget"
+      element={
+        <RequireAuth>
+          <AppLayout>
+            <BudgetPage />
           </AppLayout>
         </RequireAuth>
       }

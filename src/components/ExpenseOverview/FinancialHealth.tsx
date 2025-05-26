@@ -374,64 +374,6 @@ const FinancialHealth = () => {
         </p>
       </div>
       
-      {/* Financial Goals */}
-      <div className="mb-5">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-md font-bold">Metas Financieras</h3>
-          <Button 
-            onClick={() => setShowAddGoalDialog(true)}
-            variant="outline" 
-            size="sm"
-            className="text-finflow-mint border-finflow-mint"
-          >
-            <CirclePlus size={16} className="mr-1" />
-            Agregar Meta
-          </Button>
-        </div>
-        
-        <div className="space-y-4">
-          {goals.length === 0 ? (
-            <p className="text-center text-gray-400 py-4">
-              No hay metas financieras aún. Agrega tu primera meta para comenzar a seguir tu progreso.
-            </p>
-          ) : (
-            goals.map(goal => (
-              <motion.div 
-                key={goal.id}
-                whileHover={{ scale: 1.02 }}
-                className="bg-gray-900 rounded-xl p-4"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <p className="font-medium">{goal.name}</p>
-                  <p className="text-sm">
-                    <span className="text-finflow-mint">
-                      {formatCurrency(goal.currentAmount)}
-                    </span>
-                    <span className="text-gray-400">
-                      /{formatCurrency(goal.target)}
-                    </span>
-                  </p>
-              </div>
-                
-                <div className="relative pt-1">
-                  <Progress 
-                    value={goal.progress * 100} 
-                    max={100} 
-                    variant="success"
-                    animate={true}
-                    className="h-1.5 bg-gray-800"
-                  />
-                  
-                  <p className="mt-1 text-right text-xs text-gray-400">
-                    {Math.round(goal.progress * 100)}% completado
-                  </p>
-              </div>
-              </motion.div>
-            ))
-          )}
-        </div>
-      </div>
-      
       {/* Achievements */}
       <div>
         <h3 className="text-md font-bold mb-4">Logros</h3>
@@ -497,9 +439,9 @@ const FinancialHealth = () => {
                   onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
                   className="bg-gray-800 border-gray-700 pl-7"
                 />
-        </div>
-      </div>
-    </div>
+              </div>
+            </div>
+          </div>
           
           <DialogFooter>
             <Button 

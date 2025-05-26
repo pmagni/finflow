@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { HomeIcon, BanknoteIcon, BrainCircuitIcon } from 'lucide-react';
+import { HomeIcon, BanknoteIcon, BrainCircuitIcon, PieChart } from 'lucide-react';
 
 const Navigation = ({ className = '' }) => {
   const location = useLocation();
@@ -15,6 +15,11 @@ const Navigation = ({ className = '' }) => {
       label: 'Mis Deudas', 
       path: '/debt', 
       icon: <BanknoteIcon size={22} strokeWidth={1.5} /> 
+    },
+    { 
+      label: 'Presupuesto',
+      path: '/budget',
+      icon: <PieChart size={22} strokeWidth={1.5} />
     },
     { 
       label: 'Asistente Fin', 

@@ -22,7 +22,7 @@ const ProgressExamples = () => {
 
   return (
     <div className="space-y-6 p-6 bg-gray-950 rounded-xl">
-      <h2 className="text-xl font-bold mb-4">Componente Progress - Ejemplos</h2>
+      <h2 className="text-xl font-[650] mb-4">Componente Progress - Ejemplos</h2>
 
       {/* Variantes básicas */}
       <div className="space-y-4">

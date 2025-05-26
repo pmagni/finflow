@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -99,6 +98,9 @@ export default {
         'fade-in': 'fade-in 0.3s ease-in',
         'slide-up': 'slide-up 0.3s ease-out',
         'typing': 'typing 1s steps(40, end)'
+      },
+      fontSize: {
+        'xl': ['2rem', { lineHeight: '1.2' }]
       }
     }
   },

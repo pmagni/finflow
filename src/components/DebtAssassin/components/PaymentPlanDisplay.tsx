@@ -55,7 +55,7 @@ const PaymentPlanDisplay: React.FC<PaymentPlanDisplayProps> = ({
             <p className="text-gray-400 mb-3 text-sm">Meses para ser Libre</p>
             <div className="text-finflow-mint flex gap-2 text-4xl justify-center items-baseline">
               <span className="font-semibold">{paymentPlan.months}</span>
-              <span className="text-xl">meses</span>
+              <span className="text-xl font-[650]">meses</span>
             </div>
           </div>
           <div className="bg-gray-900 rounded-xl p-6 text-center">

@@ -78,7 +78,7 @@ const TransactionList = () => {
   
   if (isLoading) {
     return (
-      <div className="bg-finflow-card rounded-2xl p-5 animate-fade-in">
+      <div className="bg-finflow-card rounded-2xl p-5 animate-fade-in h-full">
         <h2 className="text-lg font-bold mb-4">Últimas Transacciones</h2>
         <div className="flex items-center justify-center p-4">
           <p>Cargando...</p>
@@ -128,7 +128,7 @@ const TransactionList = () => {
   };
   
   return (
-    <div className="bg-finflow-card rounded-2xl p-5 animate-fade-in">
+    <div className="bg-finflow-card rounded-2xl p-5 animate-fade-in h-full">
       <h2 className="text-lg font-bold mb-4">Últimas Transacciones</h2>
       
       <div className="space-y-3">

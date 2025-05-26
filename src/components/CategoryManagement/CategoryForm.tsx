@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -26,6 +25,7 @@ const formSchema = z.object({
   name: z.string().min(1, 'Category name is required'),
   icon: z.string().min(1, 'Icon is required'),
   transaction_type: z.enum(['income', 'expense']),
+  expense_type: z.enum(['fixed', 'variable']).optional(),
 });
 
 const icons = [
@@ -45,6 +45,7 @@ interface CategoryFormProps {
     name: string;
     icon: string;
     transaction_type: 'income' | 'expense';
+    expense_type?: 'fixed' | 'variable';
   };
   onSubmit: (values: z.infer<typeof formSchema>) => Promise<void>;
   onCancel: () => void;
@@ -59,8 +60,11 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
       name: initialData?.name || '',
       icon: initialData?.icon || 'shopping-bag',
       transaction_type: initialData?.transaction_type || 'expense',
+      expense_type: initialData?.expense_type || 'variable',
     },
   });
+
+  const transactionType = form.watch('transaction_type');
 
   return (
     <Form {...form}>
@@ -86,6 +90,30 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
             </FormItem>
           )}
         />
+
+        {transactionType === 'expense' && (
+          <FormField
+            control={form.control}
+            name="expense_type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de Gasto</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-gray-800 border-gray-700">
+                      <SelectValue placeholder="Select expense type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectItem value="fixed">Fijo</SelectItem>
+                    <SelectItem value="variable">Variable</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}
