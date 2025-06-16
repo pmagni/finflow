@@ -1,22 +1,22 @@
+
 import React from 'react';
 import AssistantChat from '@/components/Assistant/AssistantChat';
-import Layout from '@/components/Layout';
+import AppLayout from '@/components/Layout/AppLayout';
 
 const AssistantPage = () => {
   return (
-    <Layout>
-      <div className="container max-w-4xl mx-auto p-4 md:p-8 flex flex-col flex-1">
-        <header className="flex justify-between items-center py-4">
+    <AppLayout>
+      <div className="flex flex-col flex-1 h-full">
+        <header className="flex justify-between items-center py-4 md:hidden">
           <h1 className="text-2xl font-bold">AI Financial Assistant</h1>
         </header>
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           <AssistantChat />
         </div>
       </div>
-    </Layout>
+    </AppLayout>
   );
 };
 
 export default AssistantPage;
-
