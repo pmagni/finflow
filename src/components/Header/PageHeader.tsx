@@ -54,11 +54,11 @@ const PageHeader = ({ onAddTransaction }: PageHeaderProps) => {
 
   return (
     <header className="flex justify-between items-center py-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 md:hidden">
         <img src={FinFlowIcon} alt="FinFlow Icon" className="w-6 h-6" />
         <h1 className="text-2xl font-bold">FinFlow</h1>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 md:ml-auto">
         <Button
           onClick={onAddTransaction}
           className="bg-finflow-mint hover:bg-finflow-mint-dark text-black"
