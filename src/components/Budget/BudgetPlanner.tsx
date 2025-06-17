@@ -35,11 +35,20 @@ interface MonthlyBudget {
   created_at?: string;
 }
 
+// Colores modernos con gradientes
 const pieColors = [
-  '#118AB2', // Gastos fijos
-  '#FF6B6B', // Deuda
-  '#06D6A0', // Ahorro
-  '#FFD166', // Variables
+  '#00B3FF', // Gastos fijos - Azul vibrante
+  '#FF6B6B', // Deuda - Rojo coral
+  '#06D6A0', // Ahorro - Verde mint
+  '#FFD166', // Variables - Amarillo dorado
+];
+
+// Colores para hover (más brillantes)
+const pieHoverColors = [
+  '#33C3FF', // Azul más claro
+  '#FF8E8E', // Rojo más claro  
+  '#2ADEB8', // Verde más claro
+  '#FFE699', // Amarillo más claro
 ];
 
 function getPieData(budget: MonthlyBudget) {
@@ -47,18 +56,22 @@ function getPieData(budget: MonthlyBudget) {
     {
       name: 'Gastos fijos',
       value: Object.values(budget.fixed_expenses).reduce((a, b) => a + (b || 0), 0),
+      icon: '🏠',
     },
     {
-      name: 'Gastos variables',
+      name: 'Gastos variables', 
       value: Object.values(budget.variable_budget).reduce((a, b) => a + (b || 0), 0),
+      icon: '🛍️',
     },
     {
       name: 'Pagos de deuda',
       value: budget.debt_payments,
+      icon: '💳',
     },
     {
       name: 'Ahorro',
       value: budget.savings_goal,
+      icon: '💰',
     },
   ];
 }
@@ -99,31 +112,127 @@ const BudgetPlanner: React.FC = () => {
     },
   });
 
-  // Estado para el sector activo
+  // Estados para animaciones e interactividad del gráfico
   const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+  const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
+  const [chartAnimated, setChartAnimated] = useState(false);
 
   // Responsive: grillas a 1 columna en mobile, detalles colapsables
   const [showDetails, setShowDetails] = useState(false);
 
+  // Función mejorada para el sector activo con animación y efecto glow
   const renderActiveShape = (props: any) => {
     const {
       cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value
     } = props;
+    
     return (
       <g>
+        {/* Efecto glow */}
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+            <feMerge> 
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        {/* Sector expandido */}
         <Sector
           cx={cx}
           cy={cy}
           innerRadius={innerRadius}
-          outerRadius={outerRadius * 1.08}
+          outerRadius={outerRadius * 1.12}
           startAngle={startAngle}
           endAngle={endAngle}
           fill={fill}
           stroke="#1A1A1A"
-          strokeWidth={2}
-          className="filter drop-shadow-lg"
+          strokeWidth={3}
+          filter="url(#glow)"
+          style={{
+            transition: 'all 0.3s ease-in-out',
+            transformOrigin: `${cx}px ${cy}px`,
+          }}
         />
+        
+        {/* Línea hacia el centro para conectar */}
+        <line
+          x1={cx + (outerRadius * 1.15) * Math.cos((startAngle + endAngle) / 2 * Math.PI / 180)}
+          y1={cy + (outerRadius * 1.15) * Math.sin((startAngle + endAngle) / 2 * Math.PI / 180)}
+          x2={cx + (outerRadius * 0.8) * Math.cos((startAngle + endAngle) / 2 * Math.PI / 180)}
+          y2={cy + (outerRadius * 0.8) * Math.sin((startAngle + endAngle) / 2 * Math.PI / 180)}
+          stroke={fill}
+          strokeWidth={2}
+          opacity={0.8}
+        />
+        
+        {/* Texto mejorado */}
+        <text
+          x={cx + (outerRadius * 1.25) * Math.cos((startAngle + endAngle) / 2 * Math.PI / 180)}
+          y={cy + (outerRadius * 1.25) * Math.sin((startAngle + endAngle) / 2 * Math.PI / 180)}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fill-white font-semibold text-sm drop-shadow-lg"
+        >
+          {`${formatCurrency(value)}`}
+        </text>
+        <text
+          x={cx + (outerRadius * 1.25) * Math.cos((startAngle + endAngle) / 2 * Math.PI / 180)}
+          y={cy + (outerRadius * 1.25) * Math.sin((startAngle + endAngle) / 2 * Math.PI / 180) + 16}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fill-gray-300 text-xs"
+        >
+          {`${(percent * 100).toFixed(1)}%`}
+        </text>
       </g>
+    );
+  };
+
+  // Tooltip personalizado
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      return (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-4 shadow-2xl backdrop-blur-sm bg-opacity-95">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">{data.payload.icon}</span>
+            <h3 className="text-white font-semibold">{data.payload.name}</h3>
+          </div>
+          <p className="text-finflow-mint font-bold text-lg">{formatCurrency(data.value)}</p>
+          <p className="text-gray-400 text-sm">
+            {((data.value / getPieData(currentBudget || budget!).reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1)}% del total
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Componente de leyenda personalizada
+  const CustomLegend = ({ payload }: any) => {
+    return (
+      <div className="flex flex-wrap justify-center gap-4 mt-6">
+        {payload.map((entry: any, index: number) => (
+          <div
+            key={`legend-${index}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 cursor-pointer ${
+              hoveredIndex === index ? 'bg-white/10 scale-105' : 'bg-white/5'
+            }`}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(null)}
+          >
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-white text-sm font-medium">{entry.value}</span>
+            <span className="text-2xl">{getPieData(currentBudget || budget!)[index]?.icon}</span>
+          </div>
+        ))}
+      </div>
     );
   };
 
@@ -171,6 +280,8 @@ const BudgetPlanner: React.FC = () => {
           budgets.debt_payments = Math.round(debtPayments);
         }
         setCurrentBudget(budgets as MonthlyBudget);
+        // Trigger animación después de un pequeño delay
+        setTimeout(() => setChartAnimated(true), 300);
         setLoading(false);
         return;
       }
@@ -201,8 +312,11 @@ const BudgetPlanner: React.FC = () => {
         const smartBudget = await generateSmartBudget([], user.id, debtPayments);
         setBudget(smartBudget);
       }
+      // Trigger animación después de un pequeño delay
+      setTimeout(() => setChartAnimated(true), 300);
       setLoading(false);
     };
+
     fetchBudgetAndTransactions();
   }, []);
 
@@ -521,25 +635,38 @@ const BudgetPlanner: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="p-6 text-center">Cargando presupuesto...</div>;
+    return (
+      <div className="bg-finflow-card rounded-2xl p-4 sm:p-6 animate-pulse">
+        <div className="h-8 bg-gray-700 rounded w-1/3 mb-6"></div>
+        <div className="h-24 bg-gray-700 rounded mb-4"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="h-20 bg-gray-700 rounded"></div>
+          ))}
+        </div>
+        <div className="h-80 bg-gray-700 rounded"></div>
+      </div>
+    );
   }
 
   // Bloques de datos para la UI
   const resumenIngreso = (
-    <div className="bg-white/5 rounded-xl p-6 flex flex-col items-center mb-4">
-      <h3 className="text-base font-semibold mb-1" style={{ color: 'rgb(172 228 23)' }}>Ingreso total</h3>
-      <span className="text-3xl font-bold text-white">{formatCurrency((currentBudget?.total_income ?? budget?.total_income) || 0)}</span>
+    <div className="bg-gradient-to-br from-finflow-mint/10 to-finflow-mint/5 border border-finflow-mint/20 rounded-xl p-6 flex flex-col items-center mb-4 backdrop-blur-sm">
+      <h3 className="text-base font-semibold mb-1" style={{ color: 'rgb(172 228 23)' }}>💰 Ingreso total</h3>
+      <span className="text-3xl font-bold text-white animate-fade-in">{formatCurrency((currentBudget?.total_income ?? budget?.total_income) || 0)}</span>
     </div>
   );
 
   const distribucion = (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
       {/* 1. Gastos Fijos */}
-      <div className="bg-white/5 rounded-lg p-4 flex flex-col items-center">
-        <span className="text-xs mb-1 font-semibold" style={{ color: 'rgb(172 228 23)' }}>Gastos Fijos</span>
+      <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-lg p-4 flex flex-col items-center hover:scale-105 transition-all duration-300">
+        <span className="text-xs mb-1 font-semibold text-blue-300 flex items-center gap-1">
+          🏠 Gastos Fijos
+        </span>
         <span className="text-lg font-bold text-white">{formatCurrency(Object.values((currentBudget?.fixed_expenses ?? budget?.fixed_expenses) || {}).reduce((a, b) => a + (b || 0), 0))}</span>
         <button
-          className="mt-2 text-xs text-finflow-mint underline block sm:hidden"
+          className="mt-2 text-xs text-blue-300 underline block sm:hidden"
           onClick={() => setShowDetails(show => !show)}
         >
           {showDetails ? 'Ocultar detalles' : 'Ver detalles'}
@@ -551,11 +678,13 @@ const BudgetPlanner: React.FC = () => {
         </ul>
       </div>
       {/* 2. Gastos Variables */}
-      <div className="bg-white/5 rounded-lg p-4 flex flex-col items-center">
-        <span className="text-xs mb-1 font-semibold" style={{ color: 'rgb(172 228 23)' }}>Gasto Variable</span>
+      <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border border-yellow-500/20 rounded-lg p-4 flex flex-col items-center hover:scale-105 transition-all duration-300">
+        <span className="text-xs mb-1 font-semibold text-yellow-300 flex items-center gap-1">
+          🛍️ Gasto Variable
+        </span>
         <span className="text-lg font-bold text-white">{formatCurrency(Object.values((currentBudget?.variable_budget ?? budget?.variable_budget) || {}).reduce((a, b) => a + (b || 0), 0))}</span>
         <button
-          className="mt-2 text-xs text-finflow-mint underline block sm:hidden"
+          className="mt-2 text-xs text-yellow-300 underline block sm:hidden"
           onClick={() => setShowDetails(show => !show)}
         >
           {showDetails ? 'Ocultar detalles' : 'Ver detalles'}
@@ -567,58 +696,111 @@ const BudgetPlanner: React.FC = () => {
         </ul>
       </div>
       {/* 3. Pagos Deuda */}
-      <div className="bg-white/5 rounded-lg p-4 flex flex-col items-center">
-        <span className="text-xs mb-1 font-semibold" style={{ color: 'rgb(172 228 23)' }}>Pagos de Deuda</span>
+      <div className="bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20 rounded-lg p-4 flex flex-col items-center hover:scale-105 transition-all duration-300">
+        <span className="text-xs mb-1 font-semibold text-red-300 flex items-center gap-1">
+          💳 Pagos de Deuda
+        </span>
         <span className="text-lg font-bold text-white">{formatCurrency((currentBudget?.debt_payments ?? budget?.debt_payments) || 0)}</span>
       </div>
       {/* 4. Ahorro */}
-      <div className="bg-white/5 rounded-lg p-4 flex flex-col items-center">
-        <span className="text-xs mb-1 font-semibold" style={{ color: 'rgb(172 228 23)' }}>Ahorro</span>
+      <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-lg p-4 flex flex-col items-center hover:scale-105 transition-all duration-300">
+        <span className="text-xs mb-1 font-semibold text-green-300 flex items-center gap-1">
+          💰 Ahorro
+        </span>
         <span className="text-lg font-bold text-white">{formatCurrency((currentBudget?.savings_goal ?? budget?.savings_goal) || 0)}</span>
       </div>
     </div>
   );
 
   const visualizacion = (
-    <div className="flex flex-col items-center justify-center my-6">
-      <ResponsiveContainer width="100%" minWidth={0} height={340}>
-        <PieChart>
-          <Pie
-            data={getPieData(currentBudget || budget!)}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={110}
-            innerRadius={70}
-            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-            activeIndex={activeIndex}
-            activeShape={renderActiveShape}
-            onMouseEnter={(_, idx) => setActiveIndex(idx)}
-            onMouseLeave={() => setActiveIndex(null)}
-          >
-            {getPieData(currentBudget || budget!).map((entry, idx) => (
-              <Cell
-                key={`cell-${idx}`}
-                fill={pieColors[idx % pieColors.length]}
-                stroke="#1A1A1A"
-                strokeWidth={2}
-                className="filter drop-shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
-              />
-            ))}
-          </Pie>
-          <RechartsTooltip formatter={formatCurrency} />
-          <Legend align="center" verticalAlign="bottom" iconType="circle"/>
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="relative flex flex-col items-center justify-center my-6">
+      {/* Fondo con gradiente sutil */}
+      <div className="absolute inset-0 bg-gradient-to-br from-finflow-mint/5 to-transparent rounded-3xl"></div>
+      
+      {/* Contenedor del gráfico con animación de entrada */}
+      <div className={`relative transition-all duration-1000 ${chartAnimated ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <ResponsiveContainer width="100%" minWidth={0} height={380}>
+          <PieChart>
+            <defs>
+              {/* Gradientes para cada sector */}
+              <linearGradient id="gradient-0" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00B3FF" stopOpacity={1}/>
+                <stop offset="100%" stopColor="#0080CC" stopOpacity={1}/>
+              </linearGradient>
+              <linearGradient id="gradient-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFD166" stopOpacity={1}/>
+                <stop offset="100%" stopColor="#FFC233" stopOpacity={1}/>
+              </linearGradient>
+              <linearGradient id="gradient-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FF6B6B" stopOpacity={1}/>
+                <stop offset="100%" stopColor="#FF5252" stopOpacity={1}/>
+              </linearGradient>
+              <linearGradient id="gradient-3" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#06D6A0" stopOpacity={1}/>
+                <stop offset="100%" stopColor="#04B87D" stopOpacity={1}/>
+              </linearGradient>
+            </defs>
+            <Pie
+              data={getPieData(currentBudget || budget!)}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={120}
+              innerRadius={75}
+              activeIndex={activeIndex}
+              activeShape={renderActiveShape}
+              onMouseEnter={(_, idx) => {
+                setActiveIndex(idx);
+                setHoveredIndex(idx);
+              }}
+              onMouseLeave={() => {
+                setActiveIndex(null);
+                setHoveredIndex(null);
+              }}
+              animationBegin={200}
+              animationDuration={1200}
+              animationEasing="ease-out"
+            >
+              {getPieData(currentBudget || budget!).map((entry, idx) => (
+                <Cell
+                  key={`cell-${idx}`}
+                  fill={`url(#gradient-${idx})`}
+                  stroke="rgba(26, 26, 26, 0.8)"
+                  strokeWidth={3}
+                  className="cursor-pointer transition-all duration-300 hover:brightness-110"
+                  style={{
+                    filter: hoveredIndex === idx ? 'brightness(1.1) drop-shadow(0 0 10px rgba(255,255,255,0.3))' : 'none',
+                  }}
+                />
+              ))}
+            </Pie>
+            <RechartsTooltip content={<CustomTooltip />} />
+            <Legend content={<CustomLegend />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      
+      {/* Estadística central */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+        <div className="bg-gray-900/80 backdrop-blur-sm rounded-xl p-4 border border-gray-700">
+          <p className="text-xs text-gray-400 uppercase tracking-wide">Total Asignado</p>
+          <p className="text-lg font-bold text-white">
+            {formatCurrency(getPieData(currentBudget || budget!).reduce((sum, item) => sum + item.value, 0))}
+          </p>
+        </div>
+      </div>
     </div>
   );
 
   // Botón más grande en mobile
   const editarBtn = (
     <div className="flex justify-end mt-6">
-      <button className="bg-finflow-mint text-black px-6 py-3 rounded font-semibold w-full sm:w-auto text-base sm:text-sm" onClick={() => setEditing(true)}>
-        Editar presupuesto
+      <button 
+        className="bg-gradient-to-r from-finflow-mint to-finflow-mint/80 hover:from-finflow-mint/90 hover:to-finflow-mint text-black px-6 py-3 rounded-lg font-semibold w-full sm:w-auto text-base sm:text-sm transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-finflow-mint/20" 
+        onClick={() => setEditing(true)}
+      >
+        ✏️ Editar presupuesto
       </button>
     </div>
   );
@@ -627,12 +809,14 @@ const BudgetPlanner: React.FC = () => {
   const feedbackSistema = (
     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
       {feedbacks.length === 0 && (
-        <div className="bg-gray-800 text-gray-200 px-4 py-4 rounded-xl shadow text-sm text-center">No hay insights para mostrar.</div>
+        <div className="bg-gray-800/50 border border-gray-700 text-gray-200 px-4 py-4 rounded-xl shadow text-sm text-center backdrop-blur-sm">
+          📊 No hay insights para mostrar.
+        </div>
       )}
       {feedbacks.map((f, i) => (
         <div
           key={i}
-          className={`flex items-center gap-3 px-4 py-4 rounded-xl shadow text-base font-medium ${f.color}`}
+          className={`flex items-center gap-3 px-4 py-4 rounded-xl shadow-lg border border-opacity-20 text-base font-medium transition-all duration-300 hover:scale-105 ${f.color}`}
         >
           <span className="text-2xl">{f.icon}</span>
           <span>{f.msg}</span>
@@ -643,7 +827,7 @@ const BudgetPlanner: React.FC = () => {
 
   return (
     <div className="bg-finflow-card rounded-2xl p-4 sm:p-6 animate-fade-in">
-      <h2 className="text-2xl font-bold mb-6" style={{ color: 'rgb(172 228 23)' }}>Presupuesto Mensual</h2>
+      <h2 className="text-2xl font-bold mb-6" style={{ color: 'rgb(172 228 23)' }}>📊 Presupuesto Mensual</h2>
       {/* 1. Resumen de Ingresos */}
       {resumenIngreso}
       {/* 2. Distribución del Presupuesto */}
