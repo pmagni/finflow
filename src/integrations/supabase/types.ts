@@ -9,107 +9,149 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      categories: {
+      achievements: {
         Row: {
-          created_at: string
-          expense_type: string | null
-          icon: string
+          achieved_at: string | null
+          description: string | null
           id: string
-          name: string
-          transaction_type: string
-          updated_at: string
+          title: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string
-          expense_type?: string | null
-          icon?: string
+          achieved_at?: string | null
+          description?: string | null
           id?: string
-          name: string
-          transaction_type?: string
-          updated_at?: string
+          title?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string
-          expense_type?: string | null
-          icon?: string
+          achieved_at?: string | null
+          description?: string | null
           id?: string
-          name?: string
-          transaction_type?: string
-          updated_at?: string
+          title?: string | null
           user_id?: string
         }
         Relationships: []
       }
-      chat_conversations: {
+      ai_chat_history: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
-          title: string
-          updated_at: string
+          messages: Json | null
           user_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          title: string
-          updated_at?: string
+          messages?: Json | null
           user_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          title?: string
-          updated_at?: string
+          messages?: Json | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      budget_snapshots: {
+        Row: {
+          created_at: string | null
+          id: string
+          month_year: string
+          snapshot_data: Json
+          total_expenses: number | null
+          total_income: number | null
+          total_savings: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          month_year: string
+          snapshot_data: Json
+          total_expenses?: number | null
+          total_income?: number | null
+          total_savings?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          month_year?: string
+          snapshot_data?: Json
+          total_expenses?: number | null
+          total_income?: number | null
+          total_savings?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budgets: {
+        Row: {
+          created_at: string | null
+          discretionary_spend: number | null
+          fixed_expenses: number | null
+          id: string
+          income: number | null
+          month: string | null
+          savings_goal: number | null
+          user_id: string
+          variable_expenses: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          discretionary_spend?: number | null
+          fixed_expenses?: number | null
+          id?: string
+          income?: number | null
+          month?: string | null
+          savings_goal?: number | null
+          user_id: string
+          variable_expenses?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          discretionary_spend?: number | null
+          fixed_expenses?: number | null
+          id?: string
+          income?: number | null
+          month?: string | null
+          savings_goal?: number | null
+          user_id?: string
+          variable_expenses?: number | null
         }
         Relationships: []
       }
       debt_plans: {
         Row: {
-          budget_percentage: number
-          created_at: string
+          budget_percentage: number | null
+          created_at: string | null
           id: string
-          is_active: boolean
-          last_calculated_at: string | null
-          monthly_budget: number
-          monthly_income: number
-          payment_strategy: string
-          total_interest: number | null
-          total_months: number | null
-          total_paid: number | null
-          updated_at: string
+          is_active: boolean | null
+          monthly_income: number | null
+          name: string
+          payment_strategy: string | null
           user_id: string
         }
         Insert: {
-          budget_percentage: number
-          created_at?: string
+          budget_percentage?: number | null
+          created_at?: string | null
           id?: string
-          is_active?: boolean
-          last_calculated_at?: string | null
-          monthly_budget: number
-          monthly_income: number
-          payment_strategy: string
-          total_interest?: number | null
-          total_months?: number | null
-          total_paid?: number | null
-          updated_at?: string
+          is_active?: boolean | null
+          monthly_income?: number | null
+          name: string
+          payment_strategy?: string | null
           user_id: string
         }
         Update: {
-          budget_percentage?: number
-          created_at?: string
+          budget_percentage?: number | null
+          created_at?: string | null
           id?: string
-          is_active?: boolean
-          last_calculated_at?: string | null
-          monthly_budget?: number
-          monthly_income?: number
-          payment_strategy?: string
-          total_interest?: number | null
-          total_months?: number | null
-          total_paid?: number | null
-          updated_at?: string
+          is_active?: boolean | null
+          monthly_income?: number | null
+          name?: string
+          payment_strategy?: string | null
           user_id?: string
         }
         Relationships: []
@@ -117,246 +159,356 @@ export type Database = {
       debts: {
         Row: {
           balance: number
-          created_at: string
-          debt_plan_id: string
+          created_at: string | null
           id: string
-          interest_rate: number
-          is_active: boolean | null
-          is_paid: boolean
-          minimum_payment: number
-          name: string
-          total_payments: number
-          updated_at: string
+          interest_rate: number | null
+          minimum_payment: number | null
+          name: string | null
+          user_id: string
         }
         Insert: {
           balance: number
-          created_at?: string
-          debt_plan_id: string
+          created_at?: string | null
           id?: string
-          interest_rate: number
-          is_active?: boolean | null
-          is_paid?: boolean
-          minimum_payment: number
-          name: string
-          total_payments: number
-          updated_at?: string
+          interest_rate?: number | null
+          minimum_payment?: number | null
+          name?: string | null
+          user_id: string
         }
         Update: {
           balance?: number
-          created_at?: string
-          debt_plan_id?: string
+          created_at?: string | null
           id?: string
-          interest_rate?: number
-          is_active?: boolean | null
-          is_paid?: boolean
-          minimum_payment?: number
-          name?: string
-          total_payments?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "debts_debt_plan_id_fkey"
-            columns: ["debt_plan_id"]
-            isOneToOne: false
-            referencedRelation: "debt_plans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      goals: {
-        Row: {
-          completed: boolean
-          created_at: string
-          current_amount: number
-          id: string
-          monthly_contribution: number
-          months_to_achieve: number
-          name: string
-          progress: number
-          target: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed?: boolean
-          created_at?: string
-          current_amount?: number
-          id?: string
-          monthly_contribution: number
-          months_to_achieve: number
-          name: string
-          progress?: number
-          target: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed?: boolean
-          created_at?: string
-          current_amount?: number
-          id?: string
-          monthly_contribution?: number
-          months_to_achieve?: number
-          name?: string
-          progress?: number
-          target?: number
-          updated_at?: string
+          interest_rate?: number | null
+          minimum_payment?: number | null
+          name?: string | null
           user_id?: string
         }
         Relationships: []
       }
-      monthly_budgets: {
+      education_modules: {
         Row: {
-          auto_generated: boolean
+          category: string
+          content: Json
           created_at: string | null
-          debt_payments: number
-          fixed_expenses: Json
+          description: string | null
+          difficulty_level: string | null
+          estimated_duration_minutes: number | null
           id: string
-          month: string
-          savings_goal: number
-          total_income: number
-          user_id: string | null
-          variable_budget: Json
+          is_active: boolean | null
+          title: string
         }
         Insert: {
-          auto_generated?: boolean
+          category: string
+          content: Json
           created_at?: string | null
-          debt_payments: number
-          fixed_expenses: Json
+          description?: string | null
+          difficulty_level?: string | null
+          estimated_duration_minutes?: number | null
           id?: string
-          month: string
-          savings_goal: number
-          total_income: number
-          user_id?: string | null
-          variable_budget: Json
+          is_active?: boolean | null
+          title: string
         }
         Update: {
-          auto_generated?: boolean
+          category?: string
+          content?: Json
           created_at?: string | null
-          debt_payments?: number
-          fixed_expenses?: Json
+          description?: string | null
+          difficulty_level?: string | null
+          estimated_duration_minutes?: number | null
           id?: string
-          month?: string
-          savings_goal?: number
-          total_income?: number
-          user_id?: string | null
-          variable_budget?: Json
+          is_active?: boolean | null
+          title?: string
         }
         Relationships: []
       }
-      payment_history: {
+      financial_health_scores: {
         Row: {
-          amount: number
-          created_at: string
-          debt_id: string
+          calculated_at: string | null
           id: string
-          payment_date: string
-          payment_type: string
+          score: number | null
+          user_id: string
         }
         Insert: {
-          amount: number
-          created_at?: string
-          debt_id: string
+          calculated_at?: string | null
           id?: string
-          payment_date?: string
-          payment_type: string
+          score?: number | null
+          user_id: string
         }
         Update: {
-          amount?: number
-          created_at?: string
-          debt_id?: string
+          calculated_at?: string | null
           id?: string
-          payment_date?: string
-          payment_type?: string
+          score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gamification_events: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          points_earned: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          points_earned?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          points_earned?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      organization_memberships: {
+        Row: {
+          created_at: string | null
+          id: string
+          organization_id: string | null
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          organization_id?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          organization_id?: string | null
+          role?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "payment_history_debt_id_fkey"
-            columns: ["debt_id"]
+            foreignKeyName: "organization_memberships_organization_id_fkey"
+            columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: "debts"
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
       }
-      profiles: {
+      organizations: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
-          updated_at: string
-          user_name: string | null
+          name: string
         }
         Insert: {
-          created_at?: string
-          id: string
-          updated_at?: string
-          user_name?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          updated_at?: string
-          user_name?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          id: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          id?: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          id?: number
+          permission?: Database["public"]["Enums"]["app_permission"]
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      savings_goals: {
+        Row: {
+          created_at: string | null
+          current_amount: number | null
+          id: string
+          name: string
+          target_amount: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_amount?: number | null
+          id?: string
+          name: string
+          target_amount: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_amount?: number | null
+          id?: string
+          name?: string
+          target_amount?: number
+          user_id?: string
         }
         Relationships: []
       }
       transactions: {
         Row: {
           amount: number
-          category_id: string | null
-          category_name: string | null
+          category: string
           created_at: string | null
-          currency: string | null
-          description: string
+          description: string | null
           id: string
-          transaction_date: string | null
-          type: Database["public"]["Enums"]["transaction_type"]
-          user_id: string | null
+          transaction_date: string
+          type: string
+          user_id: string
         }
         Insert: {
           amount: number
-          category_id?: string | null
-          category_name?: string | null
+          category: string
           created_at?: string | null
-          currency?: string | null
-          description: string
+          description?: string | null
           id?: string
-          transaction_date?: string | null
-          type: Database["public"]["Enums"]["transaction_type"]
-          user_id?: string | null
+          transaction_date: string
+          type: string
+          user_id: string
         }
         Update: {
           amount?: number
-          category_id?: string | null
-          category_name?: string | null
+          category?: string
           created_at?: string | null
-          currency?: string | null
-          description?: string
+          description?: string | null
           id?: string
-          transaction_date?: string | null
-          type?: Database["public"]["Enums"]["transaction_type"]
-          user_id?: string | null
+          transaction_date?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_education_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          module_id: string
+          progress_percentage: number | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          module_id: string
+          progress_percentage?: number | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          module_id?: string
+          progress_percentage?: number | null
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "transactions_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: "user_education_progress_module_id_fkey"
+            columns: ["module_id"]
             isOneToOne: false
-            referencedRelation: "categories"
+            referencedRelation: "education_modules"
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          email_notifications: boolean | null
+          id: string
+          language: string | null
+          notifications_enabled: boolean | null
+          push_notifications: boolean | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          push_notifications?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          push_notifications?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: number
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: number
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: number
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      authorize: {
+        Args: {
+          requested_permission: Database["public"]["Enums"]["app_permission"]
+          user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      transaction_type: "expense" | "income"
+      app_permission: "channels.delete" | "messages.delete"
+      app_role: "admin" | "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -472,7 +624,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      transaction_type: ["expense", "income"],
+      app_permission: ["channels.delete", "messages.delete"],
+      app_role: ["admin", "moderator"],
     },
   },
 } as const
