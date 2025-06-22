@@ -7,6 +7,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { NumberInput } from '@/components/ui/number-input';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
+import { TransitionWrapper } from '@/components/ui/transition-wrapper';
 import type { Goal } from '@/services/goalService';
 
 const goalFormSchema = z.object({
@@ -76,97 +80,127 @@ export const GoalForm = ({ isOpen, onOpenChange, goal, onSubmit, isLoading }: Go
           </DialogDescription>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre de la Meta</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ej: Vacaciones, Casa nueva..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <TransitionWrapper type="fade">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de la Meta</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Ej: Vacaciones, Casa nueva..." 
+                        {...field} 
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="target"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Meta ($)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="0" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="target"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Meta ($)</FormLabel>
+                    <FormControl>
+                      <CurrencyInput 
+                        value={field.value || 0}
+                        onChange={field.onChange}
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="current_amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cantidad Actual ($)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="0" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="current_amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cantidad Actual ($)</FormLabel>
+                    <FormControl>
+                      <CurrencyInput 
+                        value={field.value || 0}
+                        onChange={field.onChange}
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="monthly_contribution"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contribución Mensual ($)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="0" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="monthly_contribution"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contribución Mensual ($)</FormLabel>
+                    <FormControl>
+                      <CurrencyInput 
+                        value={field.value || 0}
+                        onChange={field.onChange}
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="months_to_achieve"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Meses para Lograr</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="12" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="months_to_achieve"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Meses para Lograr</FormLabel>
+                    <FormControl>
+                      <NumberInput 
+                        value={field.value || 12}
+                        onChange={field.onChange}
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="flex gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1"
-              >
-                {isLoading ? 'Guardando...' : (goal ? 'Actualizar' : 'Crear Meta')}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              <div className="flex gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="flex-1 transition-all duration-200"
+                  disabled={isLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 transition-all duration-200"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <LoadingIndicator size="sm" />
+                      Guardando...
+                    </div>
+                  ) : (
+                    goal ? 'Actualizar' : 'Crear Meta'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </TransitionWrapper>
       </DialogContent>
     </Dialog>
   );

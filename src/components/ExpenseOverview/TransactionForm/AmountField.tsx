@@ -2,7 +2,7 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 
 interface AmountFieldProps {
   form: UseFormReturn<any>;
@@ -17,11 +17,10 @@ export const AmountField = ({ form }: AmountFieldProps) => {
         <FormItem>
           <FormLabel>Monto</FormLabel>
           <FormControl>
-            <Input 
-              type="number" 
-              placeholder="0" 
-              {...field}
-              onChange={(e) => field.onChange(Number(e.target.value))}
+            <CurrencyInput 
+              value={field.value || 0}
+              onChange={field.onChange}
+              className="bg-background"
             />
           </FormControl>
           <FormMessage />
