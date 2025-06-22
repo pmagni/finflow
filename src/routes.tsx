@@ -12,7 +12,6 @@ import DebtPage from './pages/DebtPage';
 import CategoriesPage from './pages/CategoriesPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
-import TavilySearchPage from './pages/TavilySearchPage';
 import AdminPage from './pages/AdminPage';
 import GamificationPage from './pages/GamificationPage';
 import NotFound from './pages/NotFound';
@@ -32,7 +31,6 @@ const AppRoutes = () => {
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="search" element={<TavilySearchPage />} />
         <Route path="admin" element={<AdminPage />} />
         <Route path="gamification" element={<GamificationPage />} />
       </Route>

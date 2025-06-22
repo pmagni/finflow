@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { gamificationService } from '@/services/gamificationService';
 import AchievementCard from '@/components/Gamification/AchievementCard';
 import UserStats from '@/components/Gamification/UserStats';
-import { Trophy, Target, Zap } from 'lucide-react';
+import { Trophy, Target, Zap, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 const GamificationPage = () => {

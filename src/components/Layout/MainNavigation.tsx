@@ -1,48 +1,88 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 import { 
-  Home, 
-  CreditCard, 
-  Target, 
-  PiggyBank, 
-  BarChart3, 
+  Home,
+  CreditCard,
+  Target,
+  PieChart,
+  MessageSquare,
+  Banknote,
+  FolderTree,
+  User,
   Settings,
-  Calculator
+  Shield,
+  Trophy
 } from 'lucide-react';
+import ProfileMenu from '@/components/UserProfile/ProfileMenu';
 
 const MainNavigation = () => {
   const location = useLocation();
+  const { user, hasRole } = useAuth();
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
-  const navItems = [
-    { path: '/', label: 'Dashboard', icon: Home },
-    { path: '/transactions', label: 'Transacciones', icon: CreditCard },
-    { path: '/budget', label: 'Presupuesto', icon: PiggyBank },
-    { path: '/goals', label: 'Metas', icon: Target },
-    { path: '/debt', label: 'Deudas', icon: Calculator },
-    { path: '/analytics', label: 'Análisis', icon: BarChart3 },
-    { path: '/settings', label: 'Configuración', icon: Settings },
+  React.useEffect(() => {
+    const checkAdminRole = async () => {
+      if (user) {
+        const adminStatus = await hasRole('admin');
+        setIsAdmin(adminStatus);
+      }
+    };
+    
+    checkAdminRole();
+  }, [user, hasRole]);
+
+  const navigationItems = [
+    { path: '/', icon: Home, label: 'Inicio' },
+    { path: '/transactions', icon: CreditCard, label: 'Transacciones' },
+    { path: '/budget', icon: PieChart, label: 'Presupuesto' },
+    { path: '/goals', icon: Target, label: 'Metas' },
+    { path: '/analytics', icon: PieChart, label: 'Analíticas' },
+    { path: '/assistant', icon: MessageSquare, label: 'Asistente' },
+    { path: '/debt', icon: Banknote, label: 'Deudas' },
+    { path: '/gamification', icon: Trophy, label: 'Gamificación' },
+    { path: '/categories', icon: FolderTree, label: 'Categorías' },
+    { path: '/profile', icon: User, label: 'Perfil' },
+    { path: '/settings', icon: Settings, label: 'Configuración' },
+    ...(isAdmin ? [{ path: '/admin', icon: Shield, label: 'Admin' }] : [])
   ];
 
   return (
-    <nav className="flex flex-col space-y-2">
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = location.pathname === item.path;
-        
-        return (
-          <Link key={item.path} to={item.path}>
-            <Button
-              variant={isActive ? 'default' : 'ghost'}
-              className="w-full justify-start"
-            >
-              <Icon className="mr-2 h-4 w-4" />
-              {item.label}
-            </Button>
+    <nav className="bg-finflow-card border-b border-gray-700 px-6 py-4">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="flex items-center space-x-8">
+          <Link to="/" className="text-finflow-mint font-bold text-xl">
+            FinFlow
           </Link>
-        );
-      })}
+          
+          <div className="hidden md:flex items-center space-x-6">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-finflow-mint text-black'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <ProfileMenu />
+        </div>
+      </div>
     </nav>
   );
 };
