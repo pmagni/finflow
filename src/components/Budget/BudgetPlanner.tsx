@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { budgetService, type Budget } from '@/services/budgetService';
+import { BudgetHealthIndicator } from './BudgetHealthIndicator';
 
 interface BudgetData {
   income: number;
@@ -26,6 +27,7 @@ const BudgetPlanner = () => {
     savings_goal: 0,
     discretionary_spend: 0,
   });
+  const [currentBudget, setCurrentBudget] = useState<Budget | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -42,6 +44,7 @@ const BudgetPlanner = () => {
       const data = await budgetService.getBudgetByUserAndMonth(user.id, currentMonth);
       
       if (data) {
+        setCurrentBudget(data);
         setBudget({
           income: data.income || 0,
           fixed_expenses: data.fixed_expenses || 0,
@@ -52,6 +55,7 @@ const BudgetPlanner = () => {
       }
     } catch (error) {
       console.error('Error fetching budget:', error);
+      toast.error('Error al cargar el presupuesto');
     }
   };
 
@@ -77,30 +81,43 @@ const BudgetPlanner = () => {
         discretionary_spend: budget.discretionary_spend,
       };
 
+      let savedBudget: Budget;
       if (existingBudget) {
-        await budgetService.updateBudget(existingBudget.id, budgetData);
+        savedBudget = await budgetService.updateBudget(existingBudget.id, budgetData);
       } else {
-        await budgetService.createBudget(budgetData);
+        savedBudget = await budgetService.createBudget(budgetData);
       }
 
+      setCurrentBudget(savedBudget);
       toast.success('Presupuesto guardado exitosamente');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving budget:', error);
-      toast.error('Error al guardar el presupuesto');
+      toast.error(error.message || 'Error al guardar el presupuesto');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleInputChange = (field: keyof BudgetData, value: string) => {
+    const numericValue = parseFloat(value) || 0;
+    if (numericValue < 0) {
+      toast.error('Los valores no pueden ser negativos');
+      return;
+    }
+    
     setBudget(prev => ({
       ...prev,
-      [field]: parseFloat(value) || 0
+      [field]: numericValue
     }));
   };
 
   const totalExpenses = budget.fixed_expenses + budget.variable_expenses;
   const remainingIncome = budget.income - totalExpenses - budget.savings_goal;
+
+  // Calculate health analysis
+  const healthAnalysis = currentBudget 
+    ? budgetService.validateBudgetHealth(currentBudget)
+    : { isHealthy: true, warnings: [], suggestions: [] };
 
   return (
     <div className="space-y-6">
@@ -118,6 +135,8 @@ const BudgetPlanner = () => {
               <Input
                 id="income"
                 type="number"
+                min="0"
+                step="0.01"
                 value={budget.income}
                 onChange={(e) => handleInputChange('income', e.target.value)}
                 placeholder="0"
@@ -131,6 +150,8 @@ const BudgetPlanner = () => {
               <Input
                 id="fixed_expenses"
                 type="number"
+                min="0"
+                step="0.01"
                 value={budget.fixed_expenses}
                 onChange={(e) => handleInputChange('fixed_expenses', e.target.value)}
                 placeholder="0"
@@ -142,6 +163,8 @@ const BudgetPlanner = () => {
               <Input
                 id="variable_expenses"
                 type="number"
+                min="0"
+                step="0.01"
                 value={budget.variable_expenses}
                 onChange={(e) => handleInputChange('variable_expenses', e.target.value)}
                 placeholder="0"
@@ -155,6 +178,8 @@ const BudgetPlanner = () => {
               <Input
                 id="savings_goal"
                 type="number"
+                min="0"
+                step="0.01"
                 value={budget.savings_goal}
                 onChange={(e) => handleInputChange('savings_goal', e.target.value)}
                 placeholder="0"
@@ -166,6 +191,8 @@ const BudgetPlanner = () => {
               <Input
                 id="discretionary_spend"
                 type="number"
+                min="0"
+                step="0.01"
                 value={budget.discretionary_spend}
                 onChange={(e) => handleInputChange('discretionary_spend', e.target.value)}
                 placeholder="0"
@@ -201,6 +228,13 @@ const BudgetPlanner = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {currentBudget && (
+        <BudgetHealthIndicator 
+          budget={currentBudget} 
+          healthAnalysis={healthAnalysis}
+        />
+      )}
     </div>
   );
 };

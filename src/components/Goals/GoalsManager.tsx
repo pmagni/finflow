@@ -2,17 +2,25 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Target } from 'lucide-react';
+import { Plus, Target, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { goalService, Goal } from '@/services/goalService';
 import { GoalCard } from './GoalCard';
 import { GoalForm } from './GoalForm';
 import { ProgressDialog } from './ProgressDialog';
+import { GoalStatistics } from './GoalStatistics';
 
 export const GoalsManager = () => {
   const { user } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [statistics, setStatistics] = useState<{
+    totalGoals: number;
+    completedGoals: number;
+    totalTargetAmount: number;
+    totalCurrentAmount: number;
+    averageProgress: number;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
@@ -22,6 +30,7 @@ export const GoalsManager = () => {
   useEffect(() => {
     if (user) {
       fetchGoals();
+      fetchStatistics();
     }
   }, [user]);
 
@@ -33,6 +42,16 @@ export const GoalsManager = () => {
     } catch (error) {
       console.error('Error fetching goals:', error);
       toast.error('Error al cargar las metas');
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      if (!user) return;
+      const stats = await goalService.getGoalStatistics(user.id);
+      setStatistics(stats);
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
     }
   };
 
@@ -49,10 +68,10 @@ export const GoalsManager = () => {
       
       toast.success('Meta creada exitosamente');
       setIsFormOpen(false);
-      fetchGoals();
-    } catch (error) {
+      await Promise.all([fetchGoals(), fetchStatistics()]);
+    } catch (error: any) {
       console.error('Error creating goal:', error);
-      toast.error('Error al crear la meta');
+      toast.error(error.message || 'Error al crear la meta');
     } finally {
       setIsLoading(false);
     }
@@ -67,10 +86,10 @@ export const GoalsManager = () => {
       toast.success('Meta actualizada exitosamente');
       setIsFormOpen(false);
       setSelectedGoal(undefined);
-      fetchGoals();
-    } catch (error) {
+      await Promise.all([fetchGoals(), fetchStatistics()]);
+    } catch (error: any) {
       console.error('Error updating goal:', error);
-      toast.error('Error al actualizar la meta');
+      toast.error(error.message || 'Error al actualizar la meta');
     } finally {
       setIsLoading(false);
     }
@@ -82,10 +101,10 @@ export const GoalsManager = () => {
     try {
       await goalService.deleteGoal(id);
       toast.success('Meta eliminada exitosamente');
-      fetchGoals();
-    } catch (error) {
+      await Promise.all([fetchGoals(), fetchStatistics()]);
+    } catch (error: any) {
       console.error('Error deleting goal:', error);
-      toast.error('Error al eliminar la meta');
+      toast.error(error.message || 'Error al eliminar la meta');
     }
   };
 
@@ -102,10 +121,10 @@ export const GoalsManager = () => {
       toast.success('Progreso agregado exitosamente');
       setIsProgressDialogOpen(false);
       setSelectedGoalForProgress('');
-      fetchGoals();
-    } catch (error) {
+      await Promise.all([fetchGoals(), fetchStatistics()]);
+    } catch (error: any) {
       console.error('Error updating progress:', error);
-      toast.error('Error al agregar progreso');
+      toast.error(error.message || 'Error al agregar progreso');
     }
   };
 
@@ -138,6 +157,8 @@ export const GoalsManager = () => {
           </div>
         </CardHeader>
       </Card>
+
+      {statistics && <GoalStatistics statistics={statistics} />}
 
       {activeGoals.length > 0 && (
         <div>

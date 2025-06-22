@@ -115,9 +115,9 @@ const DebtCalculator = () => {
         setShowPlan(false);
         setCurrentStep(1);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar el plan de deudas:', error);
-      toast.error('Error al cargar el plan de deudas');
+      toast.error(error.message || 'Error al cargar el plan de deudas');
     } finally {
       setLoadingDebts(false);
     }
@@ -183,7 +183,12 @@ const DebtCalculator = () => {
   const updateDebt = (id: string, field: keyof DebtItem, value: string | number) => {
     const updatedDebts = debts.map(debt => {
       if (debt.id === id) {
-        return { ...debt, [field]: typeof value === 'string' ? value : Number(value) };
+        const numericValue = typeof value === 'string' ? parseFloat(value) || 0 : Number(value);
+        if (numericValue < 0) {
+          toast.error(`${field} no puede ser negativo`);
+          return debt;
+        }
+        return { ...debt, [field]: typeof value === 'string' ? value : numericValue };
       }
       return debt;
     });
@@ -240,7 +245,7 @@ const DebtCalculator = () => {
       setDebtPlanId(newPlanId);
     }
     
-    const result = await debtService.saveDebt(debt, debtPlanId!);
+    const result = await debtService.saveDebt(debt, user.id);
     setSavingInProgress(false);
     return result;
   };
@@ -388,8 +393,9 @@ const DebtCalculator = () => {
             <Button
               className="w-full bg-finflow-mint text-black font-bold hover:bg-finflow-mint/90"
               onClick={handleGeneratePlan}
+              disabled={savingInProgress}
             >
-              Generar Mi Plan de Pagos
+              {savingInProgress ? 'Guardando...' : 'Generar Mi Plan de Pagos'}
             </Button>
           </div>
         );
