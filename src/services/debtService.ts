@@ -3,6 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { DebtItem } from '@/types';
 import { PaymentStrategy } from '@/components/DebtAssassin/utils/debtCalculations';
 import { toast } from 'sonner';
+import type { Tables, TablesInsert, TablesUpdate } from '@/types/supabase';
+
+export type Debt = Tables<'debts'>;
+export type DebtPlan = Tables<'debt_plans'>;
+export type DebtInsert = TablesInsert<'debts'>;
+export type DebtPlanInsert = TablesInsert<'debt_plans'>;
 
 // Service for handling debt-related operations with Supabase
 export const debtService = {
@@ -20,7 +26,7 @@ export const debtService = {
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
       
       if (debtPlanError && debtPlanError.code !== 'PGRST116') {
         console.error('[loadDebts] Error loading debt plan:', debtPlanError);
@@ -80,7 +86,24 @@ export const debtService = {
         return null;
       }
 
-      const debtPlanData = {
+      // Validaciones
+      if (monthlyIncome <= 0) {
+        throw new Error('Los ingresos mensuales deben ser mayores a 0');
+      }
+
+      if (monthlyBudget <= 0) {
+        throw new Error('El presupuesto mensual debe ser mayor a 0');
+      }
+
+      if (budgetPercentage <= 0 || budgetPercentage > 100) {
+        throw new Error('El porcentaje del presupuesto debe estar entre 1 y 100');
+      }
+
+      if (monthlyBudget > monthlyIncome) {
+        toast.error('El presupuesto para deudas no puede ser mayor a los ingresos mensuales');
+      }
+
+      const debtPlanData: DebtPlanInsert = {
         name: 'Plan Principal',
         monthly_income: Math.round(monthlyIncome),
         monthly_budget: Math.round(monthlyBudget),
@@ -137,9 +160,26 @@ export const debtService = {
         toast.error('Debes iniciar sesión para guardar deudas');
         return false;
       }
+
+      // Validaciones
+      if (!debt.name || debt.name.trim() === '') {
+        throw new Error('El nombre de la deuda es requerido');
+      }
+
+      if (debt.balance <= 0) {
+        throw new Error('El saldo debe ser mayor a 0');
+      }
+
+      if (debt.interestRate < 0) {
+        throw new Error('La tasa de interés no puede ser negativa');
+      }
+
+      if (debt.minimumPayment <= 0) {
+        throw new Error('El pago mínimo debe ser mayor a 0');
+      }
       
-      const debtData = {
-        name: debt.name,
+      const debtData: DebtInsert = {
+        name: debt.name.trim(),
         balance: Math.round(debt.balance),
         interest_rate: Math.round(debt.interestRate * 100) / 100,
         minimum_payment: Math.round(debt.minimumPayment),
@@ -189,6 +229,10 @@ export const debtService = {
 
   // Delete a debt from the database
   async deleteDebt(debtId: string) {
+    if (!debtId) {
+      throw new Error('ID de la deuda es requerido');
+    }
+
     // For existing debts in database
     if (!debtId.startsWith('temp_')) {
       try {
@@ -212,5 +256,51 @@ export const debtService = {
     
     // For temporary debts that aren't in the database yet
     return true;
+  },
+
+  // Get debt statistics for a user
+  async getDebtStatistics(userId: string): Promise<{
+    totalDebts: number;
+    totalBalance: number;
+    totalMinimumPayments: number;
+    averageInterestRate: number;
+    highestInterestDebt: Debt | null;
+  }> {
+    if (!userId) {
+      throw new Error('ID de usuario es requerido');
+    }
+
+    const { data: debts, error } = await supabase
+      .from('debts')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    if (!debts || debts.length === 0) {
+      return {
+        totalDebts: 0,
+        totalBalance: 0,
+        totalMinimumPayments: 0,
+        averageInterestRate: 0,
+        highestInterestDebt: null
+      };
+    }
+
+    const totalDebts = debts.length;
+    const totalBalance = debts.reduce((sum, debt) => sum + debt.balance, 0);
+    const totalMinimumPayments = debts.reduce((sum, debt) => sum + (debt.minimum_payment || 0), 0);
+    const averageInterestRate = debts.reduce((sum, debt) => sum + (debt.interest_rate || 0), 0) / totalDebts;
+    const highestInterestDebt = debts.reduce((highest, current) => 
+      (current.interest_rate || 0) > (highest.interest_rate || 0) ? current : highest
+    );
+
+    return {
+      totalDebts,
+      totalBalance,
+      totalMinimumPayments,
+      averageInterestRate,
+      highestInterestDebt
+    };
   }
 };
