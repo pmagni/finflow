@@ -4,6 +4,7 @@ import { useBudget } from '@/hooks/useBudget';
 import { BudgetForm } from './BudgetForm';
 import { BudgetSummary } from './BudgetSummary';
 import { BudgetHealthIndicator } from './BudgetHealthIndicator';
+import { BudgetLoadingState } from './BudgetLoadingState';
 
 const BudgetPlanner = () => {
   const {
@@ -19,11 +20,7 @@ const BudgetPlanner = () => {
   const healthAnalysis = getHealthAnalysis();
 
   if (isFetching) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-finflow-mint"></div>
-      </div>
-    );
+    return <BudgetLoadingState />;
   }
 
   return (
