@@ -1,58 +1,71 @@
+
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import Layout from '@/components/Layout';
+import { useAuth } from '@/hooks/useAuth';
+import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const SettingsPage = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-finflow-dark">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-finflow-mint"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
-    <Layout>
-      <div className="container max-w-3xl mx-auto p-4 md:p-8">
-        <h1 className="text-2xl font-bold mb-6">Settings</h1>
+    <div className="min-h-screen bg-finflow-dark text-white p-6">
+      <div className="container max-w-3xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Configuración</h1>
 
         <Tabs defaultValue="appearance" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="appearance">Apariencia</TabsTrigger>
+            <TabsTrigger value="account">Cuenta</TabsTrigger>
+            <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
           </TabsList>
           
           <TabsContent value="appearance" className="space-y-4 mt-6">
             <div className="space-y-4">
-              <h2 className="text-lg font-medium">Theme</h2>
+              <h2 className="text-lg font-medium">Tema</h2>
               
               <div className="space-y-4">
                 <RadioGroup defaultValue="dark">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="dark" id="dark" />
-                    <Label htmlFor="dark">Dark Theme</Label>
+                    <Label htmlFor="dark">Tema Oscuro</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="light" id="light" />
-                    <Label htmlFor="light">Light Theme</Label>
+                    <Label htmlFor="light">Tema Claro</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="system" id="system" />
-                    <Label htmlFor="system">System Default</Label>
+                    <Label htmlFor="system">Predeterminado del Sistema</Label>
                   </div>
                 </RadioGroup>
               </div>
             </div>
             
             <div className="space-y-4 pt-4">
-              <h2 className="text-lg font-medium">Interface</h2>
+              <h2 className="text-lg font-medium">Interfaz</h2>
               
               <div className="flex items-center justify-between">
-                <Label htmlFor="reduced-motion">Reduce animations</Label>
+                <Label htmlFor="reduced-motion">Reducir animaciones</Label>
                 <Switch id="reduced-motion" />
               </div>
               
               <div className="flex items-center justify-between">
-                <Label htmlFor="compact-view">Compact view</Label>
+                <Label htmlFor="compact-view">Vista compacta</Label>
                 <Switch id="compact-view" />
               </div>
             </div>
@@ -60,37 +73,35 @@ const SettingsPage = () => {
           
           <TabsContent value="account" className="space-y-4 mt-6">
             <div className="space-y-2">
-              <h2 className="text-lg font-medium">Account Information</h2>
+              <h2 className="text-lg font-medium">Información de la Cuenta</h2>
               <p className="text-gray-400">Email: {user?.email}</p>
             </div>
-            
-            {/* Aquí se pueden agregar más configuraciones de cuenta */}
           </TabsContent>
           
           <TabsContent value="notifications" className="space-y-4 mt-6">
             <div className="space-y-4">
-              <h2 className="text-lg font-medium">Notification Settings</h2>
+              <h2 className="text-lg font-medium">Configuración de Notificaciones</h2>
               
               <div className="flex items-center justify-between">
-                <Label htmlFor="push-notifications">Push notifications</Label>
+                <Label htmlFor="push-notifications">Notificaciones push</Label>
                 <Switch id="push-notifications" defaultChecked />
               </div>
               
               <div className="flex items-center justify-between">
-                <Label htmlFor="email-notifications">Email notifications</Label>
+                <Label htmlFor="email-notifications">Notificaciones por email</Label>
                 <Switch id="email-notifications" defaultChecked />
               </div>
               
               <div className="flex items-center justify-between">
-                <Label htmlFor="budget-alerts">Budget alerts</Label>
+                <Label htmlFor="budget-alerts">Alertas de presupuesto</Label>
                 <Switch id="budget-alerts" defaultChecked />
               </div>
             </div>
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </div>
   );
 };
 
-export default SettingsPage; 
+export default SettingsPage;

@@ -83,6 +83,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const hasRole = async (role: UserRole): Promise<boolean> => {
     if (!user) return false;
     
+    // Si el rol es 'user', consideramos que todos los usuarios autenticados son 'user'
+    if (role === 'user') return true;
+    
     try {
       const { data, error } = await supabase
         .from('user_roles')
