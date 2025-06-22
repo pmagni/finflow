@@ -1,13 +1,21 @@
+
 import React from 'react';
 import BudgetPlanner from '@/components/Budget/BudgetPlanner';
+import PageContainer from '@/components/Layout/PageContainer';
+import AppHeader from '@/components/Layout/AppHeader';
 
 const BudgetPage = () => {
   return (
-    <div className="max-w-3xl mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6">Presupuesto Mensual</h1>
-      <BudgetPlanner />
-    </div>
+    <PageContainer>
+      <AppHeader 
+        title="Presupuesto Mensual"
+        subtitle="Planifica y gestiona tus ingresos y gastos"
+      />
+      <div className="max-w-3xl mx-auto py-8">
+        <BudgetPlanner />
+      </div>
+    </PageContainer>
   );
 };
 
-export default BudgetPage; 
+export default BudgetPage;

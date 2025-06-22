@@ -56,8 +56,8 @@ const MainNavigation = () => {
             FinFlow
           </Link>
           
-          <div className="hidden md:flex items-center space-x-6">
-            {navigationItems.map((item) => {
+          <div className="hidden lg:flex items-center space-x-6">
+            {navigationItems.slice(0, 8).map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               

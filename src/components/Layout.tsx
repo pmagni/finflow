@@ -3,7 +3,8 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
-import MainNavigation from './Layout/MainNavigation';
+import DesktopSidebar from './Layout/DesktopSidebar';
+import MobileNavigation from './Layout/MobileNavigation';
 
 const Layout = () => {
   const { user, loading } = useAuth();
@@ -22,8 +23,9 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-finflow-dark">
-      <MainNavigation />
-      <main className="flex-1">
+      <DesktopSidebar />
+      <MobileNavigation />
+      <main className="md:ml-64 pb-16 md:pb-0">
         <Outlet />
       </main>
     </div>
