@@ -303,6 +303,48 @@ export type Database = {
         }
         Relationships: []
       }
+      goals: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          current_amount: number | null
+          id: string
+          monthly_contribution: number
+          months_to_achieve: number
+          name: string
+          progress: number | null
+          target: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          current_amount?: number | null
+          id?: string
+          monthly_contribution: number
+          months_to_achieve: number
+          name: string
+          progress?: number | null
+          target: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          current_amount?: number | null
+          id?: string
+          monthly_contribution?: number
+          months_to_achieve?: number
+          name?: string
+          progress?: number | null
+          target?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       organization_memberships: {
         Row: {
           created_at: string | null
