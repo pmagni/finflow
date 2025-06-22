@@ -7,6 +7,7 @@ import { formatCurrency } from '@/utils/formatters';
 import { PlusCircle, TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
+import { FinancialOverview } from '@/components/Dashboard/FinancialOverview';
 
 const Index = () => {
   const [stats, setStats] = useState({
@@ -69,6 +70,11 @@ const Index = () => {
         <p className="text-gray-400">
           Resumen de tu situación financiera actual
         </p>
+      </div>
+
+      {/* Integración del FinancialOverview */}
+      <div className="mb-8">
+        <FinancialOverview />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -157,6 +163,14 @@ const Index = () => {
             >
               <Target className="mr-2 h-4 w-4" />
               Planificar Presupuesto
+            </Button>
+            <Button 
+              onClick={() => navigate('/goals')} 
+              className="w-full justify-start"
+              variant="outline"
+            >
+              <Target className="mr-2 h-4 w-4" />
+              Gestionar Metas
             </Button>
             <Button 
               onClick={() => navigate('/debt')} 

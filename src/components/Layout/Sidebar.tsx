@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { HomeIcon, BanknoteIcon, BrainCircuitIcon, User, LogOut, FolderTree } from 'lucide-react';
+import { HomeIcon, BanknoteIcon, BrainCircuitIcon, User, LogOut, FolderTree, Target, BarChart3, PieChart } from 'lucide-react';
 import FinFlowIcon from '@/assets/favicon.svg';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -16,9 +17,13 @@ import {
 
 const menuItems = [
   { label: 'Home', path: '/', icon: <HomeIcon size={22} strokeWidth={1.5} /> },
-  { label: 'Mis Ahorros', path: '/savings', icon: <BanknoteIcon size={22} strokeWidth={1.5} /> },
-  { label: 'Mis Deudas', path: '/debt', icon: <BanknoteIcon size={22} strokeWidth={1.5} /> },
-  { label: 'Asistente Fin', path: '/assistant', icon: <BrainCircuitIcon size={22} strokeWidth={1.5} /> },
+  { label: 'Transacciones', path: '/transactions', icon: <BanknoteIcon size={22} strokeWidth={1.5} /> },
+  { label: 'Presupuesto', path: '/budget', icon: <PieChart size={22} strokeWidth={1.5} /> },
+  { label: 'Metas', path: '/goals', icon: <Target size={22} strokeWidth={1.5} /> },
+  { label: 'Deudas', path: '/debt', icon: <BanknoteIcon size={22} strokeWidth={1.5} /> },
+  { label: 'Análisis', path: '/analytics', icon: <BarChart3 size={22} strokeWidth={1.5} /> },
+  { label: 'Ahorros', path: '/savings', icon: <BanknoteIcon size={22} strokeWidth={1.5} /> },
+  { label: 'Asistente IA', path: '/assistant', icon: <BrainCircuitIcon size={22} strokeWidth={1.5} /> },
 ];
 
 const Sidebar = ({ className = '' }) => {

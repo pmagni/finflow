@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { HomeIcon, BanknoteIcon, BrainCircuitIcon, PieChart } from 'lucide-react';
+import { HomeIcon, BanknoteIcon, BrainCircuitIcon, PieChart, Target, BarChart3 } from 'lucide-react';
 
 const Navigation = ({ className = '' }) => {
   const location = useLocation();
@@ -12,17 +13,22 @@ const Navigation = ({ className = '' }) => {
       icon: <HomeIcon size={22} strokeWidth={1.5} /> 
     },
     { 
-      label: 'Mis Deudas', 
-      path: '/debt', 
-      icon: <BanknoteIcon size={22} strokeWidth={1.5} /> 
-    },
-    { 
       label: 'Presupuesto',
       path: '/budget',
       icon: <PieChart size={22} strokeWidth={1.5} />
     },
     { 
-      label: 'Asistente Fin', 
+      label: 'Metas',
+      path: '/goals',
+      icon: <Target size={22} strokeWidth={1.5} />
+    },
+    { 
+      label: 'Análisis',
+      path: '/analytics',
+      icon: <BarChart3 size={22} strokeWidth={1.5} />
+    },
+    { 
+      label: 'Asistente', 
       path: '/assistant', 
       icon: <BrainCircuitIcon size={22} strokeWidth={1.5} /> 
     },
