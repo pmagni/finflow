@@ -123,12 +123,43 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          id: string
+          name: string
+          transaction_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          transaction_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          transaction_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       debt_plans: {
         Row: {
           budget_percentage: number | null
           created_at: string | null
           id: string
           is_active: boolean | null
+          monthly_budget: number | null
           monthly_income: number | null
           name: string
           payment_strategy: string | null
@@ -139,6 +170,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          monthly_budget?: number | null
           monthly_income?: number | null
           name: string
           payment_strategy?: string | null
@@ -149,6 +181,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          monthly_budget?: number | null
           monthly_income?: number | null
           name?: string
           payment_strategy?: string | null
@@ -320,6 +353,27 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           id: number
@@ -369,7 +423,10 @@ export type Database = {
         Row: {
           amount: number
           category: string
+          category_id: string | null
+          category_name: string | null
           created_at: string | null
+          currency: string | null
           description: string | null
           id: string
           transaction_date: string
@@ -379,7 +436,10 @@ export type Database = {
         Insert: {
           amount: number
           category: string
+          category_id?: string | null
+          category_name?: string | null
           created_at?: string | null
+          currency?: string | null
           description?: string | null
           id?: string
           transaction_date: string
@@ -389,14 +449,25 @@ export type Database = {
         Update: {
           amount?: number
           category?: string
+          category_id?: string | null
+          category_name?: string | null
           created_at?: string | null
+          currency?: string | null
           description?: string | null
           id?: string
           transaction_date?: string
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_education_progress: {
         Row: {

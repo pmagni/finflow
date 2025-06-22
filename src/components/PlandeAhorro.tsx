@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
@@ -11,40 +12,6 @@ import { Database } from '@/types/supabase';
 
 type Goal = Database['public']['Tables']['goals']['Row'];
 type GoalInsert = Database['public']['Tables']['goals']['Insert'];
-type GoalUpdate = Database['public']['Tables']['goals']['Update'];
-
-const registerMonthlyContribution = async (goal: any, toast: any, userId: string) => {
-  try {
-    const transactions = [];
-    const startDate = new Date();
-    
-    // Crear una transacción para cada mes
-    for (let i = 0; i < goal.months_to_achieve; i++) {
-      const transactionDate = new Date(startDate);
-      transactionDate.setMonth(startDate.getMonth() + i);
-      
-      transactions.push({
-        amount: goal.monthly_contribution,
-        type: 'expense',
-        description: `Cuota ${i + 1} de ${goal.months_to_achieve} para la meta: ${goal.name}`,
-        date: transactionDate.toISOString(),
-        category: 'Ahorros',
-        goal_id: goal.id,
-        user_id: userId
-      });
-    }
-
-    const { error } = await supabase.from('transactions').insert(transactions);
-    if (error) throw error;
-  } catch (error) {
-    console.error('Error registrando las cuotas mensuales:', error);
-    toast({
-      title: "Error",
-      description: "No se pudieron registrar las cuotas mensuales.",
-      variant: "destructive"
-    });
-  }
-};
 
 const PlandeAhorro = () => {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -79,6 +46,7 @@ const PlandeAhorro = () => {
       });
       return;
     }
+    
     const monthlyContribution = Number(newGoal.target) / Number(newGoal.monthsToAchieve);
     const goalInsert: GoalInsert = {
       user_id: user.id,
@@ -90,18 +58,15 @@ const PlandeAhorro = () => {
       progress: 0,
       completed: false
     };
+    
     const { data, error } = await supabase.from('goals').insert(goalInsert).select().single();
     if (error) {
       toast({ title: 'Error', description: 'No se pudo crear la meta', variant: 'destructive' });
       return;
     }
+    
     setGoals([data, ...goals]);
     setNewGoal({ name: '', target: '', monthsToAchieve: '' });
-    await registerMonthlyContribution({
-      ...data,
-      monthly_contribution: monthlyContribution,
-      name: newGoal.name
-    }, toast, user.id);
     toast({ title: 'Meta agregada', description: 'Tu meta financiera ha sido agregada exitosamente.' });
   };
 
@@ -188,7 +153,6 @@ const PlandeAhorro = () => {
                 <Progress 
                   value={goal.progress * 100} 
                   max={100} 
-                  variant="success"
                   className="h-1.5 bg-gray-800"
                 />
                 <p className="mt-1 text-right text-xs text-gray-400">
@@ -199,8 +163,18 @@ const PlandeAhorro = () => {
                 Cuota Mensual: {formatCurrency(goal.monthly_contribution)}
               </p>
               <div className="flex justify-end mt-2 space-x-2">
-                <Button onClick={() => handleEditGoal(goal.id, { name: 'Nuevo Nombre' })} className="bg-finflow-mint text-black hover:bg-finflow-mint-dark">Editar</Button>
-                <Button onClick={() => handleDeleteGoal(goal.id)} className="bg-red-600 text-white hover:bg-red-700">Eliminar</Button>
+                <Button 
+                  onClick={() => handleEditGoal(goal.id, { name: 'Nuevo Nombre' })} 
+                  className="bg-finflow-mint text-black hover:bg-finflow-mint-dark"
+                >
+                  Editar
+                </Button>
+                <Button 
+                  onClick={() => handleDeleteGoal(goal.id)} 
+                  className="bg-red-600 text-white hover:bg-red-700"
+                >
+                  Eliminar
+                </Button>
               </div>
             </div>
           ))
@@ -210,4 +184,4 @@ const PlandeAhorro = () => {
   );
 };
 
-export default PlandeAhorro; 
+export default PlandeAhorro;

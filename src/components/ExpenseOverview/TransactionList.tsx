@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getRecentExpenses } from '@/services/expenseService';
 import { formatCurrency } from '@/utils/formatters';
 import {
   ShoppingBag,
@@ -18,17 +18,15 @@ import { supabase } from '@/integrations/supabase/client';
 interface Transaction {
   id: string;
   type: 'income' | 'expense';
-  description: string;
+  description: string | null;
   amount: number;
   category_id: string | null;
-  user_id: string | null;
+  category_name: string | null;
+  user_id: string;
   created_at: string | null;
-  transaction_date?: string | null;
-  currency?: string | null;
-  category?: {
-    name: string;
-    icon: string;
-  } | null;
+  transaction_date: string;
+  currency: string | null;
+  category: string;
 }
 
 const TransactionList = () => {
@@ -38,13 +36,9 @@ const TransactionList = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        // Updated query to include category relationship
         const { data, error } = await supabase
           .from('transactions')
-          .select(`
-            *,
-            category:categories(name, icon)
-          `)
+          .select('*')
           .order('transaction_date', { ascending: false })
           .limit(5);
           
@@ -88,24 +82,30 @@ const TransactionList = () => {
   }
   
   const getCategoryIcon = (categoryName: string | null | undefined) => {
-    // Si category es null o undefined, usar un valor por defecto
     if (!categoryName) {
       return <BadgeDollarSign className="text-finflow-mint" size={20} />;
     }
     
     switch (categoryName.toLowerCase()) {
+      case 'alimentación':
       case 'food':
         return <Coffee className="text-[#FF6B6B]" size={20} />;
+      case 'transporte':
       case 'transport':
         return <Bus className="text-[#4ECDC4]" size={20} />;
+      case 'entretenimiento':
       case 'entertainment':
         return <Film className="text-[#FFD166]" size={20} />;
+      case 'compras':
       case 'groceries':
         return <ShoppingBag className="text-[#06D6A0]" size={20} />;
+      case 'servicios':
       case 'utilities':
         return <Home className="text-[#118AB2]" size={20} />;
+      case 'suscripciones':
       case 'subscriptions':
         return <Tv className="text-[#9381FF]" size={20} />;
+      case 'regalos':
       case 'gifts':
         return <Gift className="text-[#EF476F]" size={20} />;
       default:
@@ -119,8 +119,8 @@ const TransactionList = () => {
     }
     
     try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' });
     } catch (error) {
       console.error('Error formatting date:', error);
       return 'Invalid date';
@@ -138,25 +138,25 @@ const TransactionList = () => {
           </div>
         ) : (
           transactions.map((transaction) => (
-          <div 
+            <div 
               key={transaction.id}
-            className="bg-gray-900 rounded-xl p-3 flex items-center justify-between card-hover"
-          >
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-3">
-                  {getCategoryIcon(transaction.category?.name)}
-              </div>
-              <div className="text-left">
-                  <p className="font-medium capitalize">{transaction.category?.name || 'Uncategorized'}</p>
+              className="bg-gray-900 rounded-xl p-3 flex items-center justify-between card-hover"
+            >
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-3">
+                  {getCategoryIcon(transaction.category_name || transaction.category)}
+                </div>
+                <div className="text-left">
+                  <p className="font-medium capitalize">{transaction.category_name || transaction.category || 'Sin categoría'}</p>
                   <p className="text-xs text-gray-400">
-                    {formatDate(transaction.transaction_date || transaction.created_at)}
+                    {formatDate(transaction.transaction_date)}
                   </p>
+                </div>
               </div>
-            </div>
-            
-            <div className="text-right">
+              
+              <div className="text-right">
                 <p className="font-medium">{formatCurrency(transaction.amount || 0)}</p>
-                <p className="text-xs text-gray-400">{transaction.description || 'No description'}</p>
+                <p className="text-xs text-gray-400">{transaction.description || 'Sin descripción'}</p>
               </div>
             </div>
           ))

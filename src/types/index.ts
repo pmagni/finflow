@@ -1,3 +1,4 @@
+
 export interface Expense {
   date: string;
   category: string;
@@ -36,19 +37,17 @@ export interface FinancialHealthScore {
   }[];
 }
 
-// Add the missing Transaction interface
+// Updated Transaction interface to match database schema
 export interface Transaction {
   id: string;
   type: 'income' | 'expense';
-  description: string;
+  description: string | null;
   amount: number;
+  category: string;
   category_id: string | null;
-  user_id: string | null;
+  category_name: string | null;
+  user_id: string;
   created_at: string | null;
-  transaction_date: string | null;
+  transaction_date: string;
   currency: string | null;
-  category?: {
-    name: string;
-    icon: string;
-  } | null;
 }

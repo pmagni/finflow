@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { getCategories, deleteCategory } from '@/services/categoryService';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,9 @@ interface Category {
   name: string;
   icon: string;
   transaction_type: 'income' | 'expense';
-  expense_type?: 'fixed' | 'variable';
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface CategoryListProps {
@@ -23,10 +26,11 @@ export function CategoryList({ onEdit }: CategoryListProps) {
   useEffect(() => {
     const fetchCategories = async () => {
       const data = await getCategories();
+      // Type assertion to ensure proper typing
       const typedData = data.map(cat => ({
         ...cat,
         transaction_type: cat.transaction_type as 'income' | 'expense'
-      }));
+      })) as Category[];
       setCategories(typedData);
     };
 
@@ -34,10 +38,10 @@ export function CategoryList({ onEdit }: CategoryListProps) {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this category?')) {
+    if (confirm('¿Estás seguro de que quieres eliminar esta categoría?')) {
       try {
         await deleteCategory(id);
-        setCategories(categories.filter((cat: any) => cat.id !== id));
+        setCategories(categories.filter((cat) => cat.id !== id));
       } catch (error) {
         console.error('Error deleting category:', error);
       }
@@ -63,11 +67,6 @@ export function CategoryList({ onEdit }: CategoryListProps) {
                   <Badge variant={category.transaction_type === 'income' ? 'default' : 'secondary'}>
                     {category.transaction_type === 'income' ? 'Ingreso' : 'Gasto'}
                   </Badge>
-                  {category.transaction_type === 'expense' && category.expense_type && (
-                    <Badge variant="outline">
-                      {category.expense_type === 'fixed' ? 'Fijo' : 'Variable'}
-                    </Badge>
-                  )}
                 </div>
               </div>
             </div>

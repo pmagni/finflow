@@ -1,172 +1,147 @@
-import React, { useEffect } from 'react';
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, FormProvider } from "react-hook-form";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { transactionFormSchema, type TransactionFormValues } from './TransactionFormSchema';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { TypeField } from './TypeField';
-import { DescriptionField } from './DescriptionField';
 import { CategoryField } from './CategoryField';
+import { DescriptionField } from './DescriptionField';
 import { AmountField } from './AmountField';
 import { DateField } from './DateField';
-import { useAuth } from '@/contexts/AuthContext';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { transactionFormSchema, type TransactionFormValues, type Category } from './TransactionFormSchema';
+import { Form } from '@/components/ui/form';
 
 interface TransactionFormProps {
   isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  transaction?: {
-    id: string;
-    type: "expense" | "income";
-    description: string;
-    category_id: string;
-    amount: number;
-    transaction_date?: string;
-  };
-  isEditing?: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
-export function TransactionForm({ 
-  isOpen, 
-  onOpenChange, 
-  transaction, 
-  isEditing = false 
-}: TransactionFormProps) {
+const TransactionForm = ({ isOpen, onClose, onSuccess }: TransactionFormProps) => {
   const { user } = useAuth();
-  
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
-      type: "expense",
-      description: "",
-      category: undefined,
-      amount: undefined,
+      type: 'expense',
+      description: '',
+      category: '',
+      amount: 1000,
       transaction_date: new Date(),
     },
   });
 
-  // Update form values when editing an existing transaction
   useEffect(() => {
-    if (isEditing && transaction) {
-      form.reset({
-        type: transaction.type,
-        description: transaction.description,
-        category: transaction.category_id,
-        amount: transaction.amount,
-        transaction_date: transaction.transaction_date 
-          ? new Date(transaction.transaction_date) 
-          : new Date(),
-      });
-    } else if (!isEditing) {
-      form.reset({
-        type: "expense",
-        description: "",
-        category: undefined,
-        amount: undefined,
-        transaction_date: new Date(),
-      });
+    if (isOpen) {
+      fetchCategories();
     }
-  }, [form, isEditing, transaction, isOpen]);
+  }, [isOpen]);
 
-  const onSubmit = async (values: TransactionFormValues) => {
-    if (!user) {
-      toast.error("You need to be logged in to add a transaction");
-      return;
-    }
-
+  const fetchCategories = async () => {
     try {
-      const selectedDate = values.transaction_date.toISOString();
-      
-      if (isEditing && transaction) {
-        // Update existing transaction
-        const { error } = await supabase
-          .from('transactions')
-          .update({
-            type: values.type,
-            description: values.description,
-            category_id: values.category,
-            amount: values.amount,
-            transaction_date: selectedDate,
-            currency: 'CLP',
-          })
-          .eq('id', transaction.id);
-
-        if (error) throw error;
-        toast.success("Transacción actualizada correctamente");
-      } else {
-        // Insert new transaction
-      const { error } = await supabase
-        .from('transactions')
-        .insert({
-          type: values.type,
-          description: values.description,
-            category_id: values.category,
-          amount: values.amount,
-            user_id: user.id,
-            transaction_date: selectedDate,
-            currency: 'CLP',
-        });
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
 
       if (error) throw error;
-        toast.success("Transacción agregada correctamente");
-      }
-
-      form.reset();
-      onOpenChange(false);
+      setCategories(data || []);
     } catch (error) {
-      console.error('Error with transaction:', error);
-      toast.error(`No se pudo ${isEditing ? 'actualizar' : 'agregar'} la transacción`);
+      console.error('Error fetching categories:', error);
+      toast.error('Error al cargar las categorías');
     }
   };
 
+  const onSubmit = async (values: TransactionFormValues) => {
+    if (!user) {
+      toast.error('Debes iniciar sesión para agregar transacciones');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Find the selected category
+      const selectedCategory = categories.find(c => c.id === values.category);
+      
+      const transactionData = {
+        type: values.type,
+        description: values.description,
+        amount: values.amount,
+        category: selectedCategory?.name || 'Sin categoría',
+        category_id: values.category,
+        category_name: selectedCategory?.name || null,
+        transaction_date: values.transaction_date.toISOString().split('T')[0],
+        user_id: user.id,
+        currency: 'CLP'
+      };
+
+      const { error } = await supabase
+        .from('transactions')
+        .insert(transactionData);
+
+      if (error) throw error;
+
+      toast.success('Transacción agregada exitosamente');
+      form.reset();
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      toast.error('Error al crear la transacción');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="bg-finflow-card border-gray-800 text-white"
-        aria-describedby="transaction-form-description"
-      >
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar' : 'Agregar'} Transacción</DialogTitle>
-          <DialogDescription id="transaction-form-description">
-            {isEditing ? 'Edita la' : 'Completa el formulario para agregar una nueva'} transacción.
-          </DialogDescription>
-        </DialogHeader>
-        <FormProvider {...form}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <Card className="w-full max-w-md bg-finflow-card">
+        <CardHeader>
+          <CardTitle>Agregar Transacción</CardTitle>
+          <CardDescription>
+            Registra un nuevo ingreso o gasto
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <TypeField />
-              <DescriptionField />
-              <CategoryField />
-              <AmountField />
-              <DateField />
-              <div className="flex justify-end gap-2">
+              <TypeField form={form} />
+              <CategoryField form={form} categories={categories} />
+              <DescriptionField form={form} />
+              <AmountField form={form} />
+              <DateField form={form} />
+              
+              <div className="flex gap-2 pt-4">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  className="bg-gray-800 border-gray-700 hover:bg-gray-700"
+                  onClick={onClose}
+                  className="flex-1"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-finflow-mint hover:bg-finflow-mint-dark text-black"
+                  disabled={isLoading}
+                  className="flex-1 bg-finflow-mint hover:bg-finflow-mint-dark text-black"
                 >
-                  {isEditing ? 'Actualizar' : 'Agregar'} Transacción
+                  {isLoading ? 'Guardando...' : 'Agregar'}
                 </Button>
               </div>
             </form>
           </Form>
-        </FormProvider>
-      </DialogContent>
-    </Dialog>
+        </CardContent>
+      </Card>
+    </div>
   );
-}
+};
+
+export default TransactionForm;

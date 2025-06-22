@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -39,44 +40,16 @@ export type Database = {
         }
         Relationships: []
       }
-      chat_conversations: {
-        Row: {
-          created_at: string
-          id: string
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       debt_plans: {
         Row: {
           budget_percentage: number
           created_at: string
           id: string
           is_active: boolean
-          last_calculated_at: string | null
-          monthly_budget: number
+          monthly_budget: number | null
           monthly_income: number
+          name: string
           payment_strategy: string
-          total_interest: number | null
-          total_months: number | null
-          total_paid: number | null
-          updated_at: string
           user_id: string
         }
         Insert: {
@@ -84,14 +57,10 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
-          last_calculated_at?: string | null
-          monthly_budget: number
+          monthly_budget?: number | null
           monthly_income: number
+          name: string
           payment_strategy: string
-          total_interest?: number | null
-          total_months?: number | null
-          total_paid?: number | null
-          updated_at?: string
           user_id: string
         }
         Update: {
@@ -99,14 +68,10 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
-          last_calculated_at?: string | null
-          monthly_budget?: number
+          monthly_budget?: number | null
           monthly_income?: number
+          name?: string
           payment_strategy?: string
-          total_interest?: number | null
-          total_months?: number | null
-          total_paid?: number | null
-          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -115,51 +80,31 @@ export type Database = {
         Row: {
           balance: number
           created_at: string
-          debt_plan_id: string
           id: string
           interest_rate: number
-          is_active: boolean | null
-          is_paid: boolean
           minimum_payment: number
           name: string
-          total_payments: number
-          updated_at: string
+          user_id: string
         }
         Insert: {
           balance: number
           created_at?: string
-          debt_plan_id: string
           id?: string
           interest_rate: number
-          is_active?: boolean | null
-          is_paid?: boolean
           minimum_payment: number
           name: string
-          total_payments: number
-          updated_at?: string
+          user_id: string
         }
         Update: {
           balance?: number
           created_at?: string
-          debt_plan_id?: string
           id?: string
           interest_rate?: number
-          is_active?: boolean | null
-          is_paid?: boolean
           minimum_payment?: number
           name?: string
-          total_payments?: number
-          updated_at?: string
+          user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "debts_debt_plan_id_fkey"
-            columns: ["debt_plan_id"]
-            isOneToOne: false
-            referencedRelation: "debt_plans"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       goals: {
         Row: {
@@ -203,41 +148,6 @@ export type Database = {
         }
         Relationships: []
       }
-      payment_history: {
-        Row: {
-          amount: number
-          created_at: string
-          debt_id: string
-          id: string
-          payment_date: string
-          payment_type: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          debt_id: string
-          id?: string
-          payment_date?: string
-          payment_type: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          debt_id?: string
-          id?: string
-          payment_date?: string
-          payment_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payment_history_debt_id_fkey"
-            columns: ["debt_id"]
-            isOneToOne: false
-            referencedRelation: "debts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           created_at: string
@@ -262,39 +172,42 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          category: string
           category_id: string | null
           category_name: string | null
           created_at: string | null
           currency: string | null
-          description: string
+          description: string | null
           id: string
-          transaction_date: string | null
-          type: Database["public"]["Enums"]["transaction_type"]
-          user_id: string | null
+          transaction_date: string
+          type: string
+          user_id: string
         }
         Insert: {
           amount: number
+          category: string
           category_id?: string | null
           category_name?: string | null
           created_at?: string | null
           currency?: string | null
-          description: string
+          description?: string | null
           id?: string
-          transaction_date?: string | null
-          type: Database["public"]["Enums"]["transaction_type"]
-          user_id?: string | null
+          transaction_date: string
+          type: string
+          user_id: string
         }
         Update: {
           amount?: number
+          category?: string
           category_id?: string | null
           category_name?: string | null
           created_at?: string | null
           currency?: string | null
-          description?: string
+          description?: string | null
           id?: string
-          transaction_date?: string | null
-          type?: Database["public"]["Enums"]["transaction_type"]
-          user_id?: string | null
+          transaction_date?: string
+          type?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -410,21 +323,6 @@ export type Enums<
   ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
