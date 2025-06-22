@@ -1,26 +1,29 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { transactionFormSchema, type TransactionFormValues, type Category } from './TransactionFormSchema';
+import { Form } from '@/components/ui/form';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TypeField } from './TypeField';
 import { CategoryField } from './CategoryField';
 import { DescriptionField } from './DescriptionField';
 import { AmountField } from './AmountField';
 import { DateField } from './DateField';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { transactionFormSchema, type TransactionFormValues, type Category } from './TransactionFormSchema';
-import { Form } from '@/components/ui/form';
 
 interface TransactionFormProps {
   isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+  onOpenChange: (open: boolean) => void;
+  transaction?: any;
+  isEditing?: boolean;
 }
 
-const TransactionForm = ({ isOpen, onClose, onSuccess }: TransactionFormProps) => {
+export const TransactionForm = ({ isOpen, onOpenChange, transaction, isEditing = false }: TransactionFormProps) => {
   const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,11 +31,11 @@ const TransactionForm = ({ isOpen, onClose, onSuccess }: TransactionFormProps) =
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
-      type: 'expense',
-      description: '',
-      category: '',
-      amount: 1000,
-      transaction_date: new Date(),
+      type: transaction?.type || 'expense',
+      description: transaction?.description || '',
+      category: transaction?.category_id || '',
+      amount: transaction?.amount || 1000,
+      transaction_date: transaction?.transaction_date ? new Date(transaction.transaction_date) : new Date(),
     },
   });
 
@@ -41,6 +44,18 @@ const TransactionForm = ({ isOpen, onClose, onSuccess }: TransactionFormProps) =
       fetchCategories();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (transaction && isEditing) {
+      form.reset({
+        type: transaction.type,
+        description: transaction.description || '',
+        category: transaction.category_id || '',
+        amount: transaction.amount,
+        transaction_date: transaction.transaction_date ? new Date(transaction.transaction_date) : new Date(),
+      });
+    }
+  }, [transaction, isEditing, form]);
 
   const fetchCategories = async () => {
     try {
@@ -66,7 +81,6 @@ const TransactionForm = ({ isOpen, onClose, onSuccess }: TransactionFormProps) =
     setIsLoading(true);
 
     try {
-      // Find the selected category
       const selectedCategory = categories.find(c => c.id === values.category);
       
       const transactionData = {
@@ -81,66 +95,71 @@ const TransactionForm = ({ isOpen, onClose, onSuccess }: TransactionFormProps) =
         currency: 'CLP'
       };
 
-      const { error } = await supabase
-        .from('transactions')
-        .insert(transactionData);
+      if (isEditing && transaction) {
+        const { error } = await supabase
+          .from('transactions')
+          .update(transactionData)
+          .eq('id', transaction.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success('Transacción actualizada exitosamente');
+      } else {
+        const { error } = await supabase
+          .from('transactions')
+          .insert(transactionData);
 
-      toast.success('Transacción agregada exitosamente');
+        if (error) throw error;
+        toast.success('Transacción agregada exitosamente');
+      }
+
       form.reset();
-      onSuccess();
-      onClose();
+      onOpenChange(false);
     } catch (error) {
-      console.error('Error creating transaction:', error);
-      toast.error('Error al crear la transacción');
+      console.error('Error with transaction:', error);
+      toast.error('Error al procesar la transacción');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md bg-finflow-card">
-        <CardHeader>
-          <CardTitle>Agregar Transacción</CardTitle>
-          <CardDescription>
-            Registra un nuevo ingreso o gasto
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <TypeField form={form} />
-              <CategoryField form={form} categories={categories} />
-              <DescriptionField form={form} />
-              <AmountField form={form} />
-              <DateField form={form} />
-              
-              <div className="flex gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 bg-finflow-mint hover:bg-finflow-mint-dark text-black"
-                >
-                  {isLoading ? 'Guardando...' : 'Agregar'}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full max-w-md bg-finflow-card">
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Editar Transacción' : 'Agregar Transacción'}</DialogTitle>
+          <DialogDescription>
+            {isEditing ? 'Modifica los datos de la transacción' : 'Registra un nuevo ingreso o gasto'}
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <TypeField form={form} />
+            <CategoryField form={form} categories={categories} />
+            <DescriptionField form={form} />
+            <AmountField form={form} />
+            <DateField form={form} />
+            
+            <div className="flex gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 bg-finflow-mint hover:bg-finflow-mint-dark text-black"
+              >
+                {isLoading ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Agregar')}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

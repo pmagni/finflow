@@ -1,4 +1,5 @@
-import { TransactionForm } from '@/components/ExpenseOverview/TransactionForm';
+
+import TransactionForm from '@/components/ExpenseOverview/TransactionForm';
 
 interface Transaction {
   id: string;
@@ -33,4 +34,4 @@ export const TransactionsEditDialog = ({
   );
 };
 
-export default TransactionsEditDialog; 
+export default TransactionsEditDialog;

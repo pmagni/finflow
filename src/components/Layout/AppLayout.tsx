@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import PageHeader from '@/components/Header/PageHeader';
 import Navigation from '@/components/Navigation';
-import { TransactionForm } from '@/components/ExpenseOverview/TransactionForm';
+import TransactionForm from '@/components/ExpenseOverview/TransactionForm';
 import Sidebar from '@/components/Layout/Sidebar';
 
 interface AppLayoutProps {

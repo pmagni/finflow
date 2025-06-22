@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import TransactionsTable from '@/components/TransactionsPage/TransactionsTable';
 import { TransactionStats } from '@/components/TransactionsPage/TransactionStats';
 import { Button } from '@/components/ui/button';
-import { TransactionForm } from '@/components/ExpenseOverview/TransactionForm';
+import TransactionForm from '@/components/ExpenseOverview/TransactionForm';
 import { PlusCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +29,15 @@ const TransactionsPage = () => {
           .order('transaction_date', { ascending: false });
 
         if (error) throw error;
-        setTransactions(data || []);
+        
+        // Type cast and format the data
+        const formattedTransactions = (data || []).map(transaction => ({
+          ...transaction,
+          type: transaction.type as 'income' | 'expense',
+          category: transaction.category || transaction.category_name || 'Sin categoría'
+        })) as Transaction[];
+        
+        setTransactions(formattedTransactions);
       } catch (error) {
         console.error('Error fetching transactions:', error);
         setError(error instanceof Error ? error.message : 'Error al cargar las transacciones');

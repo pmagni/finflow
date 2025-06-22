@@ -1,5 +1,5 @@
+
 import React, { useState } from 'react';
-import { getCoreRowModel } from '@tanstack/react-table';
 import { Transaction } from '@/types';
 import { DateRange } from 'react-day-picker';
 import { Table } from "@/components/ui/table";
@@ -32,8 +32,8 @@ const TransactionsTable = ({ transactions = [], error }: TransactionsTableProps)
     const field = sorting.field;
     
     if (field === 'category') {
-      const aValue = a.category?.name || '';
-      const bValue = b.category?.name || '';
+      const aValue = typeof a.category === 'object' ? a.category.name : a.category_name || a.category || '';
+      const bValue = typeof b.category === 'object' ? b.category.name : b.category_name || b.category || '';
       return sorting.direction === 'asc' 
         ? aValue.localeCompare(bValue) 
         : bValue.localeCompare(aValue);
@@ -63,14 +63,18 @@ const TransactionsTable = ({ transactions = [], error }: TransactionsTableProps)
 
   // Filter transactions
   const filteredTransactions = sortedTransactions.filter(transaction => {
+    const categoryName = typeof transaction.category === 'object' 
+      ? transaction.category.name 
+      : transaction.category_name || transaction.category || '';
+    
     // Search term filter
     const searchMatch = searchTerm === "" || 
-      transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.category?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      (transaction.description && transaction.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      categoryName.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Category filter
     const categoryMatch = selectedCategory === "all" || 
-      transaction.category?.name === selectedCategory;
+      categoryName === selectedCategory;
     
     // Date filter
     let dateMatch = true;
@@ -102,7 +106,6 @@ const TransactionsTable = ({ transactions = [], error }: TransactionsTableProps)
   };
 
   const handleDeleteConfirm = () => {
-    // Here we would call the API to delete the transaction
     console.log('Deleting transaction:', transactionToDelete?.id);
     setTransactionToDelete(null);
   };
@@ -132,7 +135,7 @@ const TransactionsTable = ({ transactions = [], error }: TransactionsTableProps)
         dateFilter={dateFilter}
         setDateFilter={setDateFilter}
         onClearFilters={clearFilters}
-        categories={[]} // This should come from your categories data
+        categories={[]}
       />
       
       <div className="rounded-md border mt-4">
@@ -163,7 +166,7 @@ const TransactionsTable = ({ transactions = [], error }: TransactionsTableProps)
           isOpen={!!transactionToDelete}
           onOpenChange={(open) => !open && setTransactionToDelete(null)}
           onConfirm={handleDeleteConfirm}
-          transactionDescription={transactionToDelete.description}
+          transactionDescription={transactionToDelete.description || 'Sin descripción'}
         />
       )}
     </div>

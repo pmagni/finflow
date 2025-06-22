@@ -1,173 +1,123 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { formatCurrency } from '@/utils/formatters';
-import {
-  ShoppingBag,
-  Coffee,
-  Bus,
-  Film,
-  Gift,
-  Tv,
-  Home,
-  BadgeDollarSign,
-  ArrowRight
-} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Transaction {
-  id: string;
-  type: 'income' | 'expense';
-  description: string | null;
-  amount: number;
-  category_id: string | null;
-  category_name: string | null;
-  user_id: string;
-  created_at: string | null;
-  transaction_date: string;
-  currency: string | null;
-  category: string;
-}
+import { Transaction, Category } from '@/types';
+import { formatCurrency, formatDate } from '@/utils/formatters';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { AlertCircle } from 'lucide-react';
 
 const TransactionList = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('*')
-          .order('transaction_date', { ascending: false })
-          .limit(5);
-          
-        if (error) throw error;
-        setTransactions(data || []);
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-        setTransactions([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     fetchTransactions();
-    
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('public:transactions')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'transactions' }, 
-        () => {
-          fetchTransactions();
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
-  
+
+  const fetchTransactions = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          category:categories(name, icon)
+        `)
+        .order('transaction_date', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      
+      // Type assertion to handle the category join
+      const formattedTransactions = (data || []).map(transaction => ({
+        ...transaction,
+        type: transaction.type as 'income' | 'expense',
+        category: transaction.category || transaction.category_name || 'Sin categoría'
+      })) as Transaction[];
+      
+      setTransactions(formattedTransactions);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      setError(error instanceof Error ? error.message : 'Error al cargar las transacciones');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="bg-finflow-card rounded-2xl p-5 animate-fade-in h-full">
-        <h2 className="text-lg font-bold mb-4">Últimas Transacciones</h2>
-        <div className="flex items-center justify-center p-4">
-          <p>Cargando...</p>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Transacciones Recientes</CardTitle>
+          <CardDescription>Cargando transacciones...</CardDescription>
+        </CardHeader>
+      </Card>
     );
   }
-  
-  const getCategoryIcon = (categoryName: string | null | undefined) => {
-    if (!categoryName) {
-      return <BadgeDollarSign className="text-finflow-mint" size={20} />;
-    }
-    
-    switch (categoryName.toLowerCase()) {
-      case 'alimentación':
-      case 'food':
-        return <Coffee className="text-[#FF6B6B]" size={20} />;
-      case 'transporte':
-      case 'transport':
-        return <Bus className="text-[#4ECDC4]" size={20} />;
-      case 'entretenimiento':
-      case 'entertainment':
-        return <Film className="text-[#FFD166]" size={20} />;
-      case 'compras':
-      case 'groceries':
-        return <ShoppingBag className="text-[#06D6A0]" size={20} />;
-      case 'servicios':
-      case 'utilities':
-        return <Home className="text-[#118AB2]" size={20} />;
-      case 'suscripciones':
-      case 'subscriptions':
-        return <Tv className="text-[#9381FF]" size={20} />;
-      case 'regalos':
-      case 'gifts':
-        return <Gift className="text-[#EF476F]" size={20} />;
-      default:
-        return <BadgeDollarSign className="text-finflow-mint" size={20} />;
-    }
-  };
-  
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) {
-      return 'No date';
-    }
-    
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Invalid date';
-    }
-  };
-  
-  return (
-    <div className="bg-finflow-card rounded-2xl p-5 animate-fade-in h-full">
-      <h2 className="text-lg font-bold mb-4">Últimas Transacciones</h2>
-      
-      <div className="space-y-3">
-        {transactions.length === 0 ? (
-          <div className="text-center py-4 text-gray-400">
-            <p>No hay transacciones recientes</p>
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Transacciones Recientes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2 text-red-400">
+            <AlertCircle className="h-5 w-5" />
+            <p>{error}</p>
           </div>
-        ) : (
-          transactions.map((transaction) => (
-            <div 
-              key={transaction.id}
-              className="bg-gray-900 rounded-xl p-3 flex items-center justify-between card-hover"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-3">
-                  {getCategoryIcon(transaction.category_name || transaction.category)}
-                </div>
-                <div className="text-left">
-                  <p className="font-medium capitalize">{transaction.category_name || transaction.category || 'Sin categoría'}</p>
-                  <p className="text-xs text-gray-400">
-                    {formatDate(transaction.transaction_date)}
-                  </p>
-                </div>
-              </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Transacciones Recientes</CardTitle>
+        <CardDescription>Últimas 10 transacciones registradas</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {transactions.length === 0 ? (
+            <p className="text-gray-400 text-center py-4">No hay transacciones registradas</p>
+          ) : (
+            transactions.map((transaction) => {
+              const categoryName = typeof transaction.category === 'object' 
+                ? transaction.category.name 
+                : transaction.category_name || transaction.category || 'Sin categoría';
               
-              <div className="text-right">
-                <p className="font-medium">{formatCurrency(transaction.amount || 0)}</p>
-                <p className="text-xs text-gray-400">{transaction.description || 'Sin descripción'}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-      
-      <Link to="/transactions" className="flex items-center justify-center w-full mt-4 text-finflow-mint text-sm hover:underline">
-        Ver todas las transacciones
-        <ArrowRight className="ml-1" size={14} />
-      </Link>
-    </div>
+              return (
+                <div key={transaction.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-800">
+                  <div className="flex flex-col">
+                    <span className="font-medium">{transaction.description || 'Sin descripción'}</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={transaction.type === 'income' ? 'default' : 'destructive'}>
+                        {categoryName}
+                      </Badge>
+                      <span className="text-sm text-gray-400">
+                        {formatDate(transaction.transaction_date)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`font-medium ${
+                      transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
