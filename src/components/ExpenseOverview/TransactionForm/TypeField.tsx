@@ -1,43 +1,30 @@
+
 import React from 'react';
-import { useFormContext } from "react-hook-form";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { UseFormReturn } from 'react-hook-form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export function TypeField() {
-  const { control } = useFormContext();
+interface TypeFieldProps {
+  form: UseFormReturn<any>;
+}
 
+export const TypeField = ({ form }: TypeFieldProps) => {
   return (
     <FormField
-      control={control}
+      control={form.control}
       name="type"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Tipo de Transacción</FormLabel>
-          <Select 
-            onValueChange={field.onChange} 
-            defaultValue={field.value}
-            value={field.value}
-          >
+          <FormLabel>Tipo</FormLabel>
+          <Select onValueChange={field.onChange} defaultValue={field.value}>
             <FormControl>
-              <SelectTrigger className="bg-gray-800 border-gray-700">
-                <SelectValue placeholder="Seleccione tipo" />
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona el tipo" />
               </SelectTrigger>
             </FormControl>
-            <SelectContent className="bg-gray-800 border-gray-700">
-              <SelectItem value="expense">Gasto</SelectItem>
+            <SelectContent>
               <SelectItem value="income">Ingreso</SelectItem>
+              <SelectItem value="expense">Gasto</SelectItem>
             </SelectContent>
           </Select>
           <FormMessage />
@@ -45,4 +32,4 @@ export function TypeField() {
       )}
     />
   );
-}
+};

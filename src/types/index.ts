@@ -75,3 +75,20 @@ export interface SupabaseDebt {
   is_paid?: boolean;
   updated_at?: string | null;
 }
+
+// Chat conversation types for chatHistoryService
+export interface ChatConversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversation_id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  created_at: string;
+}

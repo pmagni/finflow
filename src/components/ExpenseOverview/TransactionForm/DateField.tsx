@@ -1,55 +1,53 @@
+
 import React from 'react';
-import { useFormContext } from "react-hook-form";
-import { es } from "date-fns/locale";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { UseFormReturn } from 'react-hook-form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
-export function DateField() {
-  const { control } = useFormContext();
+interface DateFieldProps {
+  form: UseFormReturn<any>;
+}
 
+export const DateField = ({ form }: DateFieldProps) => {
   return (
     <FormField
-      control={control}
+      control={form.control}
       name="transaction_date"
       render={({ field }) => (
-        <FormItem>
+        <FormItem className="flex flex-col">
           <FormLabel>Fecha</FormLabel>
           <Popover>
             <PopoverTrigger asChild>
               <FormControl>
                 <Button
-                  variant="outline"
-                  className="w-full bg-gray-800 border-gray-700 font-normal justify-start text-left"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {field.value ? (
-                    format(field.value, "PPP", { locale: es })
-                  ) : (
-                    <span>Seleccione una fecha</span>
+                  variant={"outline"}
+                  className={cn(
+                    "w-full pl-3 text-left font-normal",
+                    !field.value && "text-muted-foreground"
                   )}
+                >
+                  {field.value ? (
+                    format(field.value, "PPP")
+                  ) : (
+                    <span>Selecciona una fecha</span>
+                  )}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </FormControl>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700" align="start">
+            <PopoverContent className="w-auto p-0" align="start">
               <Calendar
-                locale={es}
                 mode="single"
                 selected={field.value}
                 onSelect={field.onChange}
+                disabled={(date) =>
+                  date > new Date() || date < new Date("1900-01-01")
+                }
                 initialFocus
               />
             </PopoverContent>
@@ -59,4 +57,4 @@ export function DateField() {
       )}
     />
   );
-} 
+};

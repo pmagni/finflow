@@ -1,34 +1,27 @@
+
 import React from 'react';
-import { useFormContext } from "react-hook-form";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { UseFormReturn } from 'react-hook-form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 
-export function DescriptionField() {
-  const { control } = useFormContext();
+interface DescriptionFieldProps {
+  form: UseFormReturn<any>;
+}
 
+export const DescriptionField = ({ form }: DescriptionFieldProps) => {
   return (
     <FormField
-      control={control}
+      control={form.control}
       name="description"
       render={({ field }) => (
         <FormItem>
           <FormLabel>Descripción</FormLabel>
           <FormControl>
-            <Input
-              placeholder="Ingrese una descripción"
-              className="bg-gray-800 border-gray-700"
-              {...field}
-            />
+            <Input placeholder="Descripción de la transacción" {...field} />
           </FormControl>
           <FormMessage />
         </FormItem>
       )}
     />
   );
-}
+};

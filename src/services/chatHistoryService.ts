@@ -1,133 +1,88 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { ChatConversation, ChatMessage } from '@/types';
 
-/**
- * Interface for chat conversation data
- */
-export interface ChatConversation {
-  id?: string;
-  user_id: string;
-  title: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-/**
- * Manages chat history using Supabase
- */
-export const chatHistoryService = {
-  /**
-   * Get all chat conversations for the current user
-   */
-  async getAllConversations(): Promise<ChatConversation[]> {
-    // Attempt to get user session
-    const { data: session } = await supabase.auth.getSession();
-
-    // If no session, return empty array
-    if (!session || !session.session) {
-      return [];
+export const getChatConversations = async (): Promise<ChatConversation[]> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuario no autenticado');
     }
-    
-    try {
-      const { data, error } = await supabase
-        .from('chat_conversations')
-        .select('*')
-        .eq('user_id', session.session.user.id);
-        
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error getting chat conversations from Supabase:', error);
-      return [];
-    }
-  },
 
-  /**
-   * Get a specific conversation by ID
-   */
-  async getConversation(id: string): Promise<ChatConversation | null> {
-    try {
-      const { data, error } = await supabase
-        .from('chat_conversations')
-        .select('*')
-        .eq('id', id)
-        .single();
-        
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error getting conversation:', error);
-      return null;
-    }
-  },
+    // For now, return empty array since we don't have chat_conversations table yet
+    // This will be implemented in Phase 2 when we add the AI chat functionality
+    console.log('Chat conversations feature not yet implemented');
+    return [];
+  } catch (error) {
+    console.error('Error al obtener conversaciones:', error);
+    return [];
+  }
+};
 
-  /**
-   * Create a new conversation in the database
-   */
-  async createConversation(title: string): Promise<ChatConversation | null> {
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session || !session.session) {
-        throw new Error('No active session');
-      }
-      
-      const newConversation: ChatConversation = {
-        title,
-        user_id: session.session.user.id,
-        created_at: new Date().toISOString()
-      };
-      
-      const { data, error } = await supabase
-        .from('chat_conversations')
-        .insert([newConversation])
-        .select();
-        
-      if (error) throw error;
-      return data?.[0] || null;
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      return null;
+export const createChatConversation = async (title: string): Promise<ChatConversation | null> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuario no autenticado');
     }
-  },
 
-  /**
-   * Update an existing conversation
-   */
-  async updateConversation(conversation: ChatConversation): Promise<ChatConversation | null> {
-    try {
-      if (!conversation.id) {
-        throw new Error('Conversation ID is required for updates');
-      }
-      
-      const { data, error } = await supabase
-        .from('chat_conversations')
-        .update(conversation)
-        .eq('id', conversation.id)
-        .select();
-        
-      if (error) throw error;
-      return data?.[0] || null;
-    } catch (error) {
-      console.error('Error updating conversation:', error);
-      return null;
-    }
-  },
+    // For now, return null since we don't have chat_conversations table yet
+    console.log('Create chat conversation feature not yet implemented');
+    return null;
+  } catch (error) {
+    console.error('Error al crear conversación:', error);
+    return null;
+  }
+};
 
-  /**
-   * Delete a conversation by ID
-   */
-  async deleteConversation(id: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('chat_conversations')
-        .delete()
-        .eq('id', id);
-        
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error deleting conversation:', error);
-      return false;
+export const deleteChatConversation = async (conversationId: string): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuario no autenticado');
     }
+
+    // For now, return false since we don't have chat_conversations table yet
+    console.log('Delete chat conversation feature not yet implemented');
+    return false;
+  } catch (error) {
+    console.error('Error al eliminar conversación:', error);
+    return false;
+  }
+};
+
+export const getChatMessages = async (conversationId: string): Promise<ChatMessage[]> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    // For now, return empty array since we don't have chat_messages table yet
+    console.log('Get chat messages feature not yet implemented');
+    return [];
+  } catch (error) {
+    console.error('Error al obtener mensajes:', error);
+    return [];
+  }
+};
+
+export const addChatMessage = async (
+  conversationId: string,
+  content: string,
+  role: 'user' | 'assistant'
+): Promise<ChatMessage | null> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    // For now, return null since we don't have chat_messages table yet
+    console.log('Add chat message feature not yet implemented');
+    return null;
+  } catch (error) {
+    console.error('Error al agregar mensaje:', error);
+    return null;
   }
 };

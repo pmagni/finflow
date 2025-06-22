@@ -1,187 +1,302 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useUser } from '@/contexts/UserContext';
-import { Button } from '@/components/ui/button';
-import DebtCalculator from '@/components/DebtAssassin/DebtCalculator';
-import PaymentPlanDisplay from '@/components/DebtAssassin/components/PaymentPlanDisplay';
-import { DebtItem } from '@/types';
-import { calculatePaymentPlan, PaymentStrategy } from '@/components/DebtAssassin/utils/debtCalculations';
-import { Loader2 } from 'lucide-react';
 
-interface SupabaseDebt {
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { PlusCircle, Trash2, Edit } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
+import { formatCurrency } from '@/utils/formatters';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+interface Debt {
   id: string;
-  name: string;
+  name: string | null;
   balance: number;
-  interest_rate: number;
-  minimum_payment: number;
-  total_payments: number;
-  debt_plan_id: string;
-  is_paid: boolean;
-  created_at: string;
-  updated_at: string;
+  interest_rate: number | null;
+  minimum_payment: number | null;
+  user_id: string;
+  created_at: string | null;
 }
 
 const DebtPage = () => {
-  const { user } = useUser();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showCalculator, setShowCalculator] = useState(false);
-  
-  // Estados para el plan de pagos
-  const [debts, setDebts] = useState<DebtItem[]>([]);
-  const [monthlyIncome, setMonthlyIncome] = useState(0);
-  const [budgetPercentage, setBudgetPercentage] = useState(30);
-  const [selectedStrategy, setSelectedStrategy] = useState<PaymentStrategy>('snowball');
-  const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
-  const [paymentPlan, setPaymentPlan] = useState({ 
-    months: 0, 
-    totalInterest: 0,
-    recommendedPercentage: 0,
-    monthlyPlans: []
-  });
-
-  // Función para convertir deuda de Supabase a DebtItem
-  const mapSupabaseDebtToDebtItem = (supabaseDebt: SupabaseDebt): DebtItem => ({
-    id: supabaseDebt.id,
-    name: supabaseDebt.name,
-    balance: supabaseDebt.balance,
-    interestRate: supabaseDebt.interest_rate,
-    minimumPayment: supabaseDebt.minimum_payment,
-    totalPayments: supabaseDebt.total_payments
+  const [debts, setDebts] = useState<Debt[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    balance: 0,
+    interest_rate: 0,
+    minimum_payment: 0
   });
 
   useEffect(() => {
-    const fetchPlan = async () => {
-      if (!user) return;
-      setLoading(true);
-      setError(null);
+    fetchDebts();
+  }, []);
 
-      try {
-        const { data: planData, error: planError } = await supabase
-          .from('debt_plans')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(1);
+  const fetchDebts = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('debts')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (planError) {
-          setError('Error al cargar el plan de pagos.');
-          return;
-        }
+      if (error) throw error;
+      setDebts(data || []);
+    } catch (error) {
+      console.error('Error fetching debts:', error);
+      toast.error('Error al cargar las deudas');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        if (!planData || planData.length === 0) {
-          setShowCalculator(true);
-          return;
-        }
-
-        const plan = planData[0];
-
-        const { data: debtsData, error: debtsError } = await supabase
-          .from('debts')
-          .select('*')
-          .eq('debt_plan_id', plan.id)
-          .eq('is_active', true);
-
-        if (debtsError) {
-          setError('Error al cargar las deudas.');
-          return;
-        }
-
-        if (plan && debtsData) {
-          // Mapear las deudas al formato correcto
-          const mappedDebts = (debtsData as SupabaseDebt[]).map(mapSupabaseDebtToDebtItem);
-          
-          // Configurar estados con los datos del plan
-          setMonthlyIncome(plan.monthly_income || 0);
-          setBudgetPercentage(plan.budget_percentage || 30);
-          setSelectedStrategy(plan.payment_strategy as PaymentStrategy || 'snowball');
-          setDebts(mappedDebts);
-
-          // Calcular el plan de pagos
-          const calculatedPlan = calculatePaymentPlan(
-            mappedDebts,
-            (plan.monthly_income * plan.budget_percentage) / 100,
-            plan.payment_strategy as PaymentStrategy || 'snowball',
-            plan.monthly_income
-          );
-          setPaymentPlan(calculatedPlan);
-        }
-      } catch (error) {
-        console.error('Error al cargar el plan:', error);
-        setError('Error al cargar el plan de pagos.');
-      } finally {
-        setLoading(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Debes iniciar sesión');
+        return;
       }
-    };
 
-    fetchPlan();
-  }, [user]);
+      if (editingDebt) {
+        const { error } = await supabase
+          .from('debts')
+          .update({
+            name: formData.name,
+            balance: formData.balance,
+            interest_rate: formData.interest_rate,
+            minimum_payment: formData.minimum_payment
+          })
+          .eq('id', editingDebt.id);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-finflow-mint mb-2" />
-        <p className="text-gray-400">Cargando plan de pagos...</p>
-      </div>
-    );
+        if (error) throw error;
+        toast.success('Deuda actualizada exitosamente');
+      } else {
+        const { error } = await supabase
+          .from('debts')
+          .insert({
+            name: formData.name,
+            balance: formData.balance,
+            interest_rate: formData.interest_rate,
+            minimum_payment: formData.minimum_payment,
+            user_id: user.id
+          });
+
+        if (error) throw error;
+        toast.success('Deuda agregada exitosamente');
+      }
+
+      setIsDialogOpen(false);
+      setEditingDebt(null);
+      setFormData({ name: '', balance: 0, interest_rate: 0, minimum_payment: 0 });
+      fetchDebts();
+    } catch (error) {
+      console.error('Error saving debt:', error);
+      toast.error('Error al guardar la deuda');
+    }
+  };
+
+  const handleEdit = (debt: Debt) => {
+    setEditingDebt(debt);
+    setFormData({
+      name: debt.name || '',
+      balance: debt.balance,
+      interest_rate: debt.interest_rate || 0,
+      minimum_payment: debt.minimum_payment || 0
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('debts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.success('Deuda eliminada exitosamente');
+      fetchDebts();
+    } catch (error) {
+      console.error('Error deleting debt:', error);
+      toast.error('Error al eliminar la deuda');
+    }
+  };
+
+  const totalDebt = debts.reduce((sum, debt) => sum + debt.balance, 0);
+  const totalMinimumPayment = debts.reduce((sum, debt) => sum + (debt.minimum_payment || 0), 0);
+
+  if (isLoading) {
+    return <div className="p-6">Cargando...</div>;
   }
 
-  if (error) {
-    return (
-      <div className="bg-finflow-card rounded-2xl p-6">
-        <p className="text-red-500 text-center">{error}</p>
-      </div>
-    );
-  }
-
-  // Si no hay plan o el usuario quiere crear uno nuevo
-  if (showCalculator) {
-    return (
-      <div className="container max-w-4xl mx-auto p-4 md:p-8">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-white">Plan de Deudas</h1>
-            {paymentPlan.months > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => setShowCalculator(false)}
-              >
-                Ver Plan Actual
-              </Button>
-            )}
-          </div>
-          <DebtCalculator />
-        </div>
-      </div>
-    );
-  }
-
-  // Vista del plan existente
   return (
-    <div className="container max-w-4xl mx-auto p-4 md:p-8">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-white">Plan de Deudas</h1>
-          <Button
-            variant="outline"
-            onClick={() => setShowCalculator(true)}
-          >
-            Crear Nuevo Plan
-          </Button>
+    <div className="container mx-auto py-6 px-4 max-w-6xl">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Gestión de Deudas</h1>
+          <p className="text-gray-400">Controla y planifica el pago de tus deudas</p>
         </div>
-
-        <PaymentPlanDisplay
-          paymentPlan={paymentPlan}
-          monthlyBudget={(monthlyIncome * budgetPercentage) / 100}
-          budgetPercentage={budgetPercentage}
-          setBudgetPercentage={setBudgetPercentage}
-          debts={debts}
-          expandedMonth={expandedMonth}
-          setExpandedMonth={setExpandedMonth}
-          goToEditDebts={() => setShowCalculator(true)}
-        />
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-finflow-mint hover:bg-finflow-mint-dark text-black">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nueva Deuda
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingDebt ? 'Editar Deuda' : 'Agregar Nueva Deuda'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre de la Deuda</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ej: Tarjeta de Crédito"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="balance">Saldo Actual</Label>
+                <Input
+                  id="balance"
+                  type="number"
+                  value={formData.balance || ''}
+                  onChange={(e) => setFormData({ ...formData, balance: Number(e.target.value) })}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="interest_rate">Tasa de Interés (%)</Label>
+                <Input
+                  id="interest_rate"
+                  type="number"
+                  step="0.01"
+                  value={formData.interest_rate || ''}
+                  onChange={(e) => setFormData({ ...formData, interest_rate: Number(e.target.value) })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="minimum_payment">Pago Mínimo</Label>
+                <Input
+                  id="minimum_payment"
+                  type="number"
+                  value={formData.minimum_payment || ''}
+                  onChange={(e) => setFormData({ ...formData, minimum_payment: Number(e.target.value) })}
+                  placeholder="0"
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                {editingDebt ? 'Actualizar' : 'Agregar'} Deuda
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Deuda Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">
+              {formatCurrency(totalDebt)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Pago Mínimo Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalMinimumPayment)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Número de Deudas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {debts.length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Deudas</CardTitle>
+          <CardDescription>
+            Gestiona todas tus deudas desde un solo lugar
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {debts.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400 mb-4">No tienes deudas registradas</p>
+              <Button onClick={() => setIsDialogOpen(true)}>
+                Agregar Primera Deuda
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {debts.map((debt) => (
+                <div key={debt.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{debt.name}</h3>
+                    <div className="flex gap-4 mt-2 text-sm text-gray-400">
+                      <span>Saldo: {formatCurrency(debt.balance)}</span>
+                      {debt.interest_rate && (
+                        <span>Interés: {debt.interest_rate}%</span>
+                      )}
+                      {debt.minimum_payment && (
+                        <span>Pago mínimo: {formatCurrency(debt.minimum_payment)}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(debt)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(debt.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
