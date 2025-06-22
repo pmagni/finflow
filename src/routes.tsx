@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import AppLayout from "@/components/Layout/AppLayout";
@@ -14,6 +15,8 @@ import CategoriesPage from "./pages/CategoriesPage";
 import ProfilePage from "./pages/ProfilePage";
 import PlandeAhorro from './components/PlandeAhorro';
 import BudgetPage from './pages/BudgetPage';
+import GoalsPage from './pages/GoalsPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 
 const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -124,6 +127,26 @@ const AppRoutes = () => (
         <RequireAuth>
           <AppLayout>
             <BudgetPage />
+          </AppLayout>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/goals"
+      element={
+        <RequireAuth>
+          <AppLayout>
+            <GoalsPage />
+          </AppLayout>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/analytics"
+      element={
+        <RequireAuth>
+          <AppLayout>
+            <AnalyticsPage />
           </AppLayout>
         </RequireAuth>
       }
