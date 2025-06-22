@@ -18,9 +18,8 @@ export const useFormValidation = <T extends Record<string, any>>(
       // Crear un objeto temporal para validar solo este campo
       const tempData = { [fieldName]: value } as Partial<T>;
       
-      // Intentar parsear solo con los datos disponibles
-      const fieldSchema = z.object({ [fieldName]: schema.shape[fieldName as keyof typeof schema.shape] });
-      fieldSchema.parse(tempData);
+      // Intentar parsear el campo individualmente
+      schema.pick({ [fieldName]: true } as any).parse(tempData);
       
       // Si no hay error, limpiar el error de este campo
       setErrors(prev => {
