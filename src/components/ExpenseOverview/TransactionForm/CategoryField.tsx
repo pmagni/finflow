@@ -3,7 +3,16 @@ import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Category } from '@/types';
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  transaction_type: 'income' | 'expense';
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface CategoryFieldProps {
   form: UseFormReturn<any>;

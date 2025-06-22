@@ -1,20 +1,29 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { transactionFormSchema, type TransactionFormValues, type Category } from './TransactionFormSchema';
+import { transactionFormSchema, type TransactionFormValues } from './TransactionFormSchema';
 import { Form } from '@/components/ui/form';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TypeField } from './TypeField';
 import { CategoryField } from './CategoryField';
 import { DescriptionField } from './DescriptionField';
 import { AmountField } from './AmountField';
 import { DateField } from './DateField';
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  transaction_type: 'income' | 'expense';
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface TransactionFormProps {
   isOpen: boolean;
@@ -65,7 +74,19 @@ export const TransactionForm = ({ isOpen, onOpenChange, transaction, isEditing =
         .order('name');
 
       if (error) throw error;
-      setCategories(data || []);
+      
+      // Map the data to ensure correct typing
+      const mappedCategories: Category[] = (data || []).map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        icon: cat.icon || '💰',
+        transaction_type: cat.transaction_type as 'income' | 'expense',
+        user_id: cat.user_id,
+        created_at: cat.created_at || '',
+        updated_at: cat.updated_at || '',
+      }));
+      
+      setCategories(mappedCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Error al cargar las categorías');
