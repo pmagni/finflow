@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DebtItem } from '@/types';
 import { PaymentStrategy } from '@/components/DebtAssassin/utils/debtCalculations';
@@ -13,7 +14,7 @@ export const debtService = {
     }
     
     try {
-      // Primero buscamos si existe un plan activo
+      // First search for an active plan
       const { data: debtPlans, error: debtPlanError } = await supabase
         .from('debt_plans')
         .select('*')
@@ -21,40 +22,40 @@ export const debtService = {
         .eq('is_active', true)
         .single();
       
-      if (debtPlanError && debtPlanError.code !== 'PGRST116') { // PGRST116 es el código para "no se encontraron resultados"
-        console.error('[loadDebts] Error al cargar el plan de deudas:', debtPlanError);
+      if (debtPlanError && debtPlanError.code !== 'PGRST116') {
+        console.error('[loadDebts] Error loading debt plan:', debtPlanError);
         throw debtPlanError;
       }
 
-      // Si no hay plan activo, retornamos null
+      // If no active plan, return null
       if (!debtPlans) {
-        console.log('[loadDebts] No se encontró un plan activo');
+        console.log('[loadDebts] No active plan found');
         return { debtPlan: null, debts: [] };
       }
 
-      console.log('[loadDebts] Plan encontrado:', debtPlans);
+      console.log('[loadDebts] Plan found:', debtPlans);
 
-      // Si hay un plan, cargamos sus deudas asociadas
+      // If there's a plan, load associated debts
       const { data: debtsData, error: debtsError } = await supabase
         .from('debts')
         .select('*')
-        .eq('debt_plan_id', debtPlans.id);
+        .eq('user_id', userId);
       
       if (debtsError) {
-        console.error('[loadDebts] Error al cargar las deudas:', debtsError);
+        console.error('[loadDebts] Error loading debts:', debtsError);
         throw debtsError;
       }
 
-      console.log('[loadDebts] Deudas encontradas:', debtsData);
+      console.log('[loadDebts] Debts found:', debtsData);
 
-      // Mapeamos las deudas al formato que espera la aplicación
+      // Map debts to the format expected by the application
       const mappedDebts = (debtsData || []).map(debt => ({
         id: debt.id,
-        name: debt.name,
+        name: debt.name || '',
         balance: debt.balance,
-        interestRate: debt.interest_rate,
-        minimumPayment: debt.minimum_payment,
-        totalPayments: debt.total_payments
+        interestRate: debt.interest_rate || 0,
+        minimumPayment: debt.minimum_payment || 0,
+        totalPayments: 0 // This field doesn't exist in current schema
       }));
       
       return { 
@@ -63,7 +64,7 @@ export const debtService = {
       };
       
     } catch (error) {
-      console.error('[loadDebts] Error al cargar los datos:', error);
+      console.error('[loadDebts] Error loading data:', error);
       toast.error('Error al cargar los datos de deudas');
       return { debtPlan: null, debts: [] };
     }
@@ -80,6 +81,7 @@ export const debtService = {
       }
 
       const debtPlanData = {
+        name: 'Plan Principal',
         monthly_income: Math.round(monthlyIncome),
         monthly_budget: Math.round(monthlyBudget),
         budget_percentage: Math.round(budgetPercentage),
@@ -88,7 +90,7 @@ export const debtService = {
         user_id: userId
       };
       
-      console.log('[saveDebtPlan] Enviando datos a Supabase:', debtPlanData);
+      console.log('[saveDebtPlan] Sending data to Supabase:', debtPlanData);
       
       let newPlanId = debtPlanId;
       if (debtPlanId) {
@@ -98,17 +100,17 @@ export const debtService = {
           .eq('id', debtPlanId);
           
         if (error) {
-          console.error('[saveDebtPlan] Error actualizando plan:', error);
+          console.error('[saveDebtPlan] Error updating plan:', error);
           throw error;
         }
       } else {
         const { data, error } = await supabase
           .from('debt_plans')
-          .insert([debtPlanData])
+          .insert(debtPlanData)
           .select();
           
         if (error) {
-          console.error('[saveDebtPlan] Error creando plan:', error);
+          console.error('[saveDebtPlan] Error creating plan:', error);
           throw error;
         }
         
@@ -122,17 +124,17 @@ export const debtService = {
       
       return newPlanId;
     } catch (error: any) {
-      console.error('[saveDebtPlan] Error al guardar el plan de deudas:', error);
+      console.error('[saveDebtPlan] Error saving debt plan:', error);
       toast.error(`Error al guardar el plan de deudas: ${error.message || error}`);
       return null;
     }
   },
 
   // Save a single debt to the database
-  async saveDebt(debt: DebtItem, debtPlanId: string) {
+  async saveDebt(debt: DebtItem, userId: string) {
     try {
-      if (!debtPlanId) {
-        toast.error('No se pudo obtener el ID del plan de deudas');
+      if (!userId) {
+        toast.error('Debes iniciar sesión para guardar deudas');
         return false;
       }
       
@@ -141,29 +143,27 @@ export const debtService = {
         balance: Math.round(debt.balance),
         interest_rate: Math.round(debt.interestRate * 100) / 100,
         minimum_payment: Math.round(debt.minimumPayment),
-        total_payments: Math.round(debt.totalPayments),
-        debt_plan_id: debtPlanId,
-        is_paid: false
+        user_id: userId
       };
       
-      console.log('[saveDebt] Enviando datos a Supabase:', debtData);
+      console.log('[saveDebt] Sending data to Supabase:', debtData);
       
       // For new debts with temporary IDs
       if (debt.id.startsWith('temp_')) {
         const { data, error } = await supabase
           .from('debts')
-          .insert([debtData])
+          .insert(debtData)
           .select();
           
         if (error) {
-          console.error('[saveDebt] Error insertando deuda:', error);
+          console.error('[saveDebt] Error inserting debt:', error);
           throw error;
         }
         
         if (data && data.length > 0) {
           return { success: true, id: data[0].id };
         } else {
-          console.error('[saveDebt] No se recibió ID para la deuda nueva');
+          console.error('[saveDebt] No ID received for new debt');
           return { success: false, id: null };
         }
       } else {
@@ -174,14 +174,14 @@ export const debtService = {
           .eq('id', debt.id);
           
         if (error) {
-          console.error('[saveDebt] Error actualizando deuda:', error);
+          console.error('[saveDebt] Error updating debt:', error);
           throw error;
         }
         
         return { success: true, id: debt.id };
       }
     } catch (error: any) {
-      console.error('[saveDebt] Error al guardar la deuda:', error);
+      console.error('[saveDebt] Error saving debt:', error);
       toast.error(`Error al guardar la deuda: ${error.message || error}`);
       return { success: false, id: null };
     }
@@ -198,13 +198,13 @@ export const debtService = {
           .eq('id', debtId);
           
         if (error) {
-          console.error('[removeDebt] Error eliminando deuda:', error);
+          console.error('[removeDebt] Error deleting debt:', error);
           throw error;
         }
         
         return true;
       } catch (error: any) {
-        console.error('[removeDebt] Error al eliminar la deuda:', error);
+        console.error('[removeDebt] Error deleting debt:', error);
         toast.error(`Error al eliminar la deuda: ${error.message || error}`);
         return false;
       }

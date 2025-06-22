@@ -12,7 +12,9 @@ interface CategoryFieldProps {
 
 export const CategoryField = ({ form, categories }: CategoryFieldProps) => {
   const transactionType = form.watch('type');
-  const filteredCategories = categories.filter(cat => cat.transaction_type === transactionType);
+  const filteredCategories = categories.filter(cat => 
+    cat.transaction_type === transactionType
+  );
 
   return (
     <FormField
