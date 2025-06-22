@@ -1,18 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables, TablesInsert, TablesUpdate } from '@/types/supabase';
 
-export interface Budget {
-  id: string;
-  user_id: string;
-  month: string | null;
-  income: number | null;
-  fixed_expenses: number | null;
-  variable_expenses: number | null;
-  savings_goal: number | null;
-  discretionary_spend: number | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
+export type Budget = Tables<'budgets'>;
+export type BudgetInsert = TablesInsert<'budgets'>;
+export type BudgetUpdate = TablesUpdate<'budgets'>;
 
 export const budgetService = {
   async getBudgetByUserAndMonth(userId: string, month: string): Promise<Budget | null> {
@@ -27,7 +19,7 @@ export const budgetService = {
     return data;
   },
 
-  async createBudget(budget: Omit<Budget, 'id' | 'created_at' | 'updated_at'>): Promise<Budget> {
+  async createBudget(budget: BudgetInsert): Promise<Budget> {
     const { data, error } = await supabase
       .from('budgets')
       .insert(budget)
@@ -38,7 +30,7 @@ export const budgetService = {
     return data;
   },
 
-  async updateBudget(id: string, updates: Partial<Budget>): Promise<Budget> {
+  async updateBudget(id: string, updates: BudgetUpdate): Promise<Budget> {
     const { data, error } = await supabase
       .from('budgets')
       .update(updates)

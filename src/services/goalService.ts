@@ -1,19 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables, TablesInsert, TablesUpdate } from '@/types/supabase';
 
-export interface Goal {
-  id: string;
-  user_id: string;
-  name: string;
-  target: number;
-  current_amount: number;
-  monthly_contribution: number;
-  months_to_achieve: number;
-  progress: number;
-  completed: boolean;
-  created_at: string | null;
-  updated_at: string | null;
-}
+export type Goal = Tables<'goals'>;
+export type GoalInsert = TablesInsert<'goals'>;
+export type GoalUpdate = TablesUpdate<'goals'>;
 
 export const goalService = {
   async getGoalsByUser(userId: string): Promise<Goal[]> {
@@ -27,8 +18,8 @@ export const goalService = {
     return data || [];
   },
 
-  async createGoal(goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'progress' | 'completed'>): Promise<Goal> {
-    const progress = goal.current_amount > 0 ? (goal.current_amount / goal.target) * 100 : 0;
+  async createGoal(goal: GoalInsert): Promise<Goal> {
+    const progress = goal.current_amount && goal.target ? (goal.current_amount / goal.target) * 100 : 0;
     const completed = progress >= 100;
 
     const { data, error } = await supabase
@@ -36,7 +27,8 @@ export const goalService = {
       .insert({
         ...goal,
         progress,
-        completed
+        completed,
+        current_amount: goal.current_amount || 0
       })
       .select()
       .single();
@@ -45,7 +37,7 @@ export const goalService = {
     return data;
   },
 
-  async updateGoal(id: string, updates: Partial<Goal>): Promise<Goal> {
+  async updateGoal(id: string, updates: GoalUpdate): Promise<Goal> {
     // Recalculate progress if current_amount or target changed
     if (updates.current_amount !== undefined || updates.target !== undefined) {
       const { data: currentGoal } = await supabase

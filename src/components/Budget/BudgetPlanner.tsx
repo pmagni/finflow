@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { budgetService, type Budget } from '@/services/budgetService';
 
 interface BudgetData {
   income: number;
@@ -36,13 +36,10 @@ const BudgetPlanner = () => {
 
   const fetchBudget = async () => {
     try {
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-
-      if (error) throw error;
+      if (!user) return;
+      
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const data = await budgetService.getBudgetByUserAndMonth(user.id, currentMonth);
       
       if (data) {
         setBudget({
@@ -67,17 +64,24 @@ const BudgetPlanner = () => {
     setIsLoading(true);
 
     try {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const existingBudget = await budgetService.getBudgetByUserAndMonth(user.id, currentMonth);
+
       const budgetData = {
-        ...budget,
         user_id: user.id,
-        month: new Date().toISOString().slice(0, 7), // YYYY-MM format
+        month: currentMonth,
+        income: budget.income,
+        fixed_expenses: budget.fixed_expenses,
+        variable_expenses: budget.variable_expenses,
+        savings_goal: budget.savings_goal,
+        discretionary_spend: budget.discretionary_spend,
       };
 
-      const { error } = await supabase
-        .from('budgets')
-        .upsert(budgetData);
-
-      if (error) throw error;
+      if (existingBudget) {
+        await budgetService.updateBudget(existingBudget.id, budgetData);
+      } else {
+        await budgetService.createBudget(budgetData);
+      }
 
       toast.success('Presupuesto guardado exitosamente');
     } catch (error) {

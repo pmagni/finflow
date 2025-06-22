@@ -3,8 +3,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Goal } from '@/services/goalService';
 import { CheckCircle, Target, TrendingUp } from 'lucide-react';
+import type { Goal } from '@/services/goalService';
 
 interface GoalCardProps {
   goal: Goal;

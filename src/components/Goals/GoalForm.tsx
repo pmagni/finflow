@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Goal } from '@/services/goalService';
+import type { Goal } from '@/services/goalService';
 
 const goalFormSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
