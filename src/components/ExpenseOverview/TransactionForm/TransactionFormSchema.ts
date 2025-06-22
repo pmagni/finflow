@@ -1,20 +1,20 @@
 
 import * as z from "zod";
+import { 
+  currencyAmount, 
+  transactionTypeValidator, 
+  transactionDateValidator,
+  descriptionString 
+} from '@/utils/validators';
 
 export const transactionFormSchema = z.object({
-  type: z.enum(["expense", "income"]),
-  description: z.string().min(1, "La descripción es obligatoria"),
+  type: transactionTypeValidator,
+  description: descriptionString,
   category: z.string({
     required_error: "La categoría es obligatoria"
   }).min(1, "La categoría es obligatoria"),
-  amount: z.coerce
-    .number()
-    .positive("El monto debe ser positivo")
-    .int("El monto debe ser un número entero")
-    .min(1, "El monto debe ser mayor a 0"),
-  transaction_date: z.date({
-    required_error: "La fecha es obligatoria",
-  }),
+  amount: currencyAmount,
+  transaction_date: transactionDateValidator,
 });
 
 export type TransactionFormValues = z.infer<typeof transactionFormSchema>;

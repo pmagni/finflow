@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,6 +13,8 @@ import { CategoryField } from './CategoryField';
 import { DescriptionField } from './DescriptionField';
 import { AmountField } from './AmountField';
 import { DateField } from './DateField';
+import { useRateLimitedOperation } from '@/hooks/useRateLimitedOperation';
+import { checkUserPermissions, validateResourceOwnership, sanitizeAndValidate } from '@/utils/securityHelpers';
 
 interface Category {
   id: string;
@@ -36,6 +37,8 @@ export const TransactionForm = ({ isOpen, onOpenChange, transaction, isEditing =
   const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const { checkRateLimit } = useRateLimitedOperation(10, 60000, 'transacción');
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
@@ -99,28 +102,60 @@ export const TransactionForm = ({ isOpen, onOpenChange, transaction, isEditing =
       return;
     }
 
+    // Verificar rate limiting
+    if (checkRateLimit(user.id)) {
+      return;
+    }
+
+    // Verificar permisos del usuario
+    const hasPermissions = await checkUserPermissions();
+    if (!hasPermissions) {
+      toast.error('No tienes permisos para realizar esta operación');
+      return;
+    }
+
+    // Si es edición, verificar ownership
+    if (isEditing && transaction) {
+      const isOwner = await validateResourceOwnership('transactions', transaction.id, user.id);
+      if (!isOwner) {
+        toast.error('No tienes permisos para editar esta transacción');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
       const selectedCategory = categories.find(c => c.id === values.category);
       
+      // Sanitizar y validar datos
+      const allowedFields: (keyof TransactionFormValues)[] = ['type', 'description', 'amount', 'category', 'transaction_date'];
+      const sanitizedValues = sanitizeAndValidate(values, allowedFields);
+      
       const transactionData = {
-        type: values.type,
-        description: values.description,
-        amount: values.amount,
+        type: sanitizedValues.type,
+        description: sanitizedValues.description?.slice(0, 200) || '', // Limitar longitud
+        amount: sanitizedValues.amount,
         category: selectedCategory?.name || 'Sin categoría',
-        category_id: values.category,
+        category_id: sanitizedValues.category,
         category_name: selectedCategory?.name || null,
-        transaction_date: values.transaction_date.toISOString().split('T')[0],
+        transaction_date: sanitizedValues.transaction_date?.toISOString().split('T')[0],
         user_id: user.id,
         currency: 'CLP'
       };
+
+      // Validación adicional del lado del cliente
+      if (transactionData.amount && transactionData.amount > 100000000) {
+        toast.error('El monto no puede exceder $100.000.000');
+        return;
+      }
 
       if (isEditing && transaction) {
         const { error } = await supabase
           .from('transactions')
           .update(transactionData)
-          .eq('id', transaction.id);
+          .eq('id', transaction.id)
+          .eq('user_id', user.id); // Asegurar que solo el propietario pueda editar
 
         if (error) throw error;
         toast.success('Transacción actualizada exitosamente');
