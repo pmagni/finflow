@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/types/supabase';
-import { checkUserPermissions, validateResourceOwnership } from '@/utils/securityHelpers';
+import { checkUserPermissions, checkResourceOwnership } from '@/utils/securityHelpers';
 
 export type Budget = Tables<'budgets'>;
 export type BudgetInsert = TablesInsert<'budgets'>;
@@ -107,25 +107,20 @@ class BudgetServiceClass {
       throw new Error('No tienes permisos para esta operación');
     }
 
-    // Obtener el user_id actual del presupuesto para verificar ownership
-    const { data: currentBudget } = await supabase
-      .from('budgets')
-      .select('user_id')
-      .eq('id', id)
-      .single();
-
-    if (!currentBudget) {
-      throw new Error('Presupuesto no encontrado');
-    }
-
-    // Verificar ownership
-    const isOwner = await validateResourceOwnership('budgets', id, currentBudget.user_id);
+    // Verificar ownership usando la función corregida
+    const isOwner = await checkResourceOwnership('budgets', id);
     if (!isOwner) {
       throw new Error('No tienes permisos para editar este presupuesto');
     }
 
+    // Obtener user ID para rate limiting
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuario no autenticado');
+    }
+
     // Rate limiting
-    if (this.checkRateLimit(currentBudget.user_id, 'updateBudget')) {
+    if (this.checkRateLimit(user.id, 'updateBudget')) {
       throw new Error('Demasiadas solicitudes. Inténtalo más tarde.');
     }
 
@@ -142,7 +137,7 @@ class BudgetServiceClass {
       .from('budgets')
       .update(updates)
       .eq('id', id)
-      .eq('user_id', currentBudget.user_id) // Asegurar que solo el propietario pueda actualizar
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -161,25 +156,20 @@ class BudgetServiceClass {
       throw new Error('No tienes permisos para esta operación');
     }
 
-    // Obtener el user_id actual del presupuesto para verificar ownership
-    const { data: currentBudget } = await supabase
-      .from('budgets')
-      .select('user_id')
-      .eq('id', id)
-      .single();
-
-    if (!currentBudget) {
-      throw new Error('Presupuesto no encontrado');
-    }
-
     // Verificar ownership
-    const isOwner = await validateResourceOwnership('budgets', id, currentBudget.user_id);
+    const isOwner = await checkResourceOwnership('budgets', id);
     if (!isOwner) {
       throw new Error('No tienes permisos para eliminar este presupuesto');
     }
 
+    // Obtener user ID para rate limiting
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuario no autenticado');
+    }
+
     // Rate limiting
-    if (this.checkRateLimit(currentBudget.user_id, 'deleteBudget')) {
+    if (this.checkRateLimit(user.id, 'deleteBudget')) {
       throw new Error('Demasiadas solicitudes. Inténtalo más tarde.');
     }
 
@@ -187,7 +177,7 @@ class BudgetServiceClass {
       .from('budgets')
       .delete()
       .eq('id', id)
-      .eq('user_id', currentBudget.user_id); // Asegurar que solo el propietario pueda eliminar
+      .eq('user_id', user.id);
 
     if (error) throw error;
   }

@@ -24,9 +24,9 @@ export const checkUserPermissions = async (requiredRole?: string): Promise<boole
   }
 };
 
-// Función para validar ownership de recursos
+// Función para validar ownership de recursos basado en user_id
 export const validateResourceOwnership = async (
-  table: string,
+  table: 'budgets' | 'transactions' | 'goals' | 'categories',
   resourceId: string,
   userId: string
 ): Promise<boolean> => {
@@ -86,4 +86,23 @@ export const detectSqlInjection = (input: string): boolean => {
 export const isValidUUID = (uuid: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(uuid);
+};
+
+// Función para verificar si un usuario es propietario de un recurso
+export const checkResourceOwnership = async (
+  table: 'budgets' | 'transactions' | 'goals' | 'categories',
+  resourceId: string
+): Promise<boolean> => {
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return false;
+    }
+
+    return validateResourceOwnership(table, resourceId, user.id);
+  } catch (error) {
+    console.error('Error checking resource ownership:', error);
+    return false;
+  }
 };
