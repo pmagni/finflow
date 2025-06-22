@@ -18,26 +18,36 @@ export const useFormValidation = <T extends Record<string, any>>(
       // Crear un objeto temporal para validar solo este campo
       const tempData = { [fieldName]: value } as Partial<T>;
       
-      // Validar usando partial schema para evitar error con pick
-      const partialSchema = schema.partial();
-      partialSchema.parse(tempData);
+      // Validar usando safeParse para evitar errores de tipos
+      const result = schema.safeParse(tempData);
       
-      // Si no hay error, limpiar el error de este campo
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[fieldName as string];
-        return newErrors;
-      });
-      
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const fieldError = error.errors[0];
-        setErrors(prev => ({
-          ...prev,
-          [fieldName as string]: fieldError.message
-        }));
+      if (result.success) {
+        // Si no hay error, limpiar el error de este campo
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[fieldName as string];
+          return newErrors;
+        });
+        return true;
+      } else {
+        // Si hay errores, buscar el error específico de este campo
+        const fieldError = result.error.errors.find(err => 
+          err.path.includes(fieldName as string)
+        );
+        
+        if (fieldError) {
+          setErrors(prev => ({
+            ...prev,
+            [fieldName as string]: fieldError.message
+          }));
+        }
+        return false;
       }
+    } catch (error) {
+      setErrors(prev => ({
+        ...prev,
+        [fieldName as string]: 'Error de validación'
+      }));
       return false;
     }
   }, [schema]);

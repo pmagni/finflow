@@ -74,7 +74,7 @@ class AdminServiceClass {
   }
 
   // Obtener lista de usuarios (solo para admins)
-  async getAllUsers(): Promise<Array<{id: string, email: string, created_at: string}>> {
+  async getAllUsers(): Promise<Array<{id: string, user_name: string, created_at: string}>> {
     const isAdminUser = await this.isAdmin();
     if (!isAdminUser) {
       throw new Error('No tienes permisos de administrador');
@@ -82,7 +82,7 @@ class AdminServiceClass {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, created_at')
+      .select('id, user_name, created_at')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -94,7 +94,7 @@ class AdminServiceClass {
   }
 
   // Asignar rol a usuario (solo para admins)
-  async assignRole(userId: string, role: 'admin' | 'moderator' | 'user'): Promise<void> {
+  async assignRole(userId: string, role: 'admin' | 'moderator'): Promise<void> {
     const isAdminUser = await this.isAdmin();
     if (!isAdminUser) {
       throw new Error('No tienes permisos de administrador');

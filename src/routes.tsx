@@ -1,158 +1,44 @@
 
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./contexts/AuthContext";
-import AppLayout from "@/components/Layout/AppLayout";
-
-import Index from "./pages/Index";
-import DebtPage from "./pages/DebtPage";
-import AssistantPage from "./pages/AssistantPage";
-import TransactionsPage from "./pages/TransactionsPage";
-import NotFound from "./pages/NotFound";
-import AuthPage from "./pages/AuthPage";
-import SettingsPage from "./pages/SettingsPage";
-import { TavilySearchPage } from "./pages/TavilySearchPage";
-import CategoriesPage from "./pages/CategoriesPage";
-import ProfilePage from "./pages/ProfilePage";
-import PlandeAhorro from './components/PlandeAhorro';
+import { Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import Index from './pages/Index';
+import AuthPage from './pages/AuthPage';
+import TransactionsPage from './pages/TransactionsPage';
 import BudgetPage from './pages/BudgetPage';
 import GoalsPage from './pages/GoalsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import AssistantPage from './pages/AssistantPage';
+import DebtPage from './pages/DebtPage';
+import CategoriesPage from './pages/CategoriesPage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
+import TavilySearchPage from './pages/TavilySearchPage';
+import AdminPage from './pages/AdminPage';
+import GamificationPage from './pages/GamificationPage';
+import NotFound from './pages/NotFound';
 
-const RequireAuth = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
-  
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  
-  return <>{children}</>;
+const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Index />} />
+        <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="budget" element={<BudgetPage />} />
+        <Route path="goals" element={<GoalsPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="assistant" element={<AssistantPage />} />
+        <Route path="debt" element={<DebtPage />} />
+        <Route path="categories" element={<CategoriesPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="search" element={<TavilySearchPage />} />
+        <Route path="admin" element={<AdminPage />} />
+        <Route path="gamification" element={<GamificationPage />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 };
-
-const AppRoutes = () => (
-  <Routes>
-    <Route path="/auth" element={<AuthPage />} />
-    <Route
-      path="/"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <Index />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/debt"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <DebtPage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/assistant"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <AssistantPage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/transactions"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <TransactionsPage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/settings"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <SettingsPage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/categories"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <CategoriesPage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/profile"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <ProfilePage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/tavily-search"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <TavilySearchPage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/savings"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <PlandeAhorro />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/budget"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <BudgetPage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/goals"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <GoalsPage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route
-      path="/analytics"
-      element={
-        <RequireAuth>
-          <AppLayout>
-            <AnalyticsPage />
-          </AppLayout>
-        </RequireAuth>
-      }
-    />
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-);
 
 export default AppRoutes;
