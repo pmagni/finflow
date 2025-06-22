@@ -17,19 +17,6 @@ interface BudgetData {
   discretionary_spend: number;
 }
 
-interface BudgetRow {
-  id: string;
-  user_id: string;
-  month: string | null;
-  income: number | null;
-  fixed_expenses: number | null;
-  variable_expenses: number | null;
-  savings_goal: number | null;
-  discretionary_spend: number | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
 const BudgetPlanner = () => {
   const { user } = useAuth();
   const [budget, setBudget] = useState<BudgetData>({
@@ -50,21 +37,20 @@ const BudgetPlanner = () => {
   const fetchBudget = async () => {
     try {
       const { data, error } = await supabase
-        .from('budgets' as any)
+        .from('budgets')
         .select('*')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       
       if (data) {
-        const budgetRow = data as BudgetRow;
         setBudget({
-          income: budgetRow.income || 0,
-          fixed_expenses: budgetRow.fixed_expenses || 0,
-          variable_expenses: budgetRow.variable_expenses || 0,
-          savings_goal: budgetRow.savings_goal || 0,
-          discretionary_spend: budgetRow.discretionary_spend || 0,
+          income: data.income || 0,
+          fixed_expenses: data.fixed_expenses || 0,
+          variable_expenses: data.variable_expenses || 0,
+          savings_goal: data.savings_goal || 0,
+          discretionary_spend: data.discretionary_spend || 0,
         });
       }
     } catch (error) {
@@ -88,7 +74,7 @@ const BudgetPlanner = () => {
       };
 
       const { error } = await supabase
-        .from('budgets' as any)
+        .from('budgets')
         .upsert(budgetData);
 
       if (error) throw error;
