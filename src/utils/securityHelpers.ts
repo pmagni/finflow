@@ -1,8 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+type UserRole = 'admin' | 'moderator' | 'user';
+
 // Función para verificar si el usuario tiene permisos para una operación
-export const checkUserPermissions = async (requiredRole?: string): Promise<boolean> => {
+export const checkUserPermissions = async (requiredRole?: UserRole): Promise<boolean> => {
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     
@@ -58,7 +60,7 @@ export const validateResourceOwnership = async (
 };
 
 // Función para limpiar y validar datos de entrada (enhanced)
-export const sanitizeAndValidate = <T>(
+export const sanitizeAndValidate = <T extends Record<string, any>>(
   data: T,
   allowedFields: (keyof T)[]
 ): Partial<T> => {
