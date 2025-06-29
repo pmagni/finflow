@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 type UserRole = 'admin' | 'moderator' | 'user';
@@ -6,18 +5,32 @@ type UserRole = 'admin' | 'moderator' | 'user';
 // Función para verificar si el usuario tiene permisos para una operación
 export const checkUserPermissions = async (requiredRole?: UserRole): Promise<boolean> => {
   try {
+    console.log('🔍 checkUserPermissions called with requiredRole:', requiredRole);
+    
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error || !user) {
+      console.log('❌ User not authenticated:', error?.message || 'No user');
       return false;
     }
 
+    console.log('✅ User authenticated:', user.id);
+
     // Si no se requiere un rol específico, solo verificar autenticación
     if (!requiredRole) {
+      console.log('✅ No specific role required, user is authenticated');
       return true;
     }
 
-    // Verificar roles específicos con RLS
+    // Si el rol requerido es 'user', todos los usuarios autenticados califican
+    if (requiredRole === 'user') {
+      console.log('✅ Required role is "user", authenticated user qualifies');
+      return true;
+    }
+
+    console.log('🔍 Checking database for role:', requiredRole, 'for user:', user.id);
+
+    // Verificar roles específicos con RLS (solo para admin/moderator)
     const { data, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
@@ -25,9 +38,14 @@ export const checkUserPermissions = async (requiredRole?: UserRole): Promise<boo
       .eq('role', requiredRole)
       .single();
     
-    return !roleError && !!data;
+    console.log('📊 Database query result:', { data, error: roleError });
+    
+    const hasRole = !roleError && !!data;
+    console.log('🎯 Final permission result:', hasRole);
+    
+    return hasRole;
   } catch (error) {
-    console.error('Error checking user permissions:', error);
+    console.error('💥 Error checking user permissions:', error);
     return false;
   }
 };
